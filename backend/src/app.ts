@@ -11,12 +11,6 @@ var con = mysql.createConnection({
   password: process.env.DB_PASS
 });
 
-con.connect(function(err) { 
-  if (err) 
-    console.log(err);
-  else
-    console.log("DB Connected!");
-});
 
 //express
 const app = express();
@@ -39,9 +33,31 @@ app.get('/dbcfg', (req, res) => {
 });
 
 app.get('/:db', (req, res) => {
-    res.json({request: req.params.db});
+
+  con.query("SELECT * FROM test."+req.params.db, function (err, result, fields) {
+    if (err) throw err;
+
+    res.json({err: err, result: result, fields: fields });
+    console.log(result);
+  
+  });
+
 });
 
-app.listen(port, () => {
-  return console.log(`Express is listening at http://localhost:${port}`);
-});
+
+//init
+try {
+    con.connect(function(err) { 
+    if (err) throw new Error(err)
+    
+    console.log("DB Connected!");
+    app.listen(port, () => {
+      return console.log(`Express is listening at http://localhost:${port}`);
+    });  
+  }); 
+}
+catch(ex) {
+  console.log(ex);
+}
+
+
