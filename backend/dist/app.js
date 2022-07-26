@@ -10,7 +10,8 @@ var mysql = require('mysql');
 var con = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
-    password: process.env.DB_PASS
+    password: process.env.DB_PASS,
+    database: process.env.DB_DATABASE
 });
 //express
 const app = (0, express_1.default)();
@@ -28,12 +29,15 @@ app.use(myMiddleware);
 app.get('/dbcfg', (req, res) => {
     res.json({ request: 'Database configuration' });
 });
+app.get('/favicon.ico', (req, res) => {
+    res.json({ request: 'No icon' });
+});
 app.get('/:db', (req, res) => {
-    con.query("SELECT * FROM test." + req.params.db, function (err, result, fields) {
+    con.query("SELECT * FROM " + req.params.db, function (err, result, fields) {
         if (err)
             throw err;
         res.json({ err: err, result: result, fields: fields });
-        console.log(result);
+        //console.log(result);
     });
 });
 //init
