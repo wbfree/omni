@@ -12,7 +12,6 @@ const port = 4000;
 function myMiddleware(req, res, next) {
     if (req.method === 'GET') {
         console.log(`${req.method} ${req.url}`);
-        console.log(process.env.DB_HOST);
     }
     next();
 }
@@ -55,6 +54,7 @@ try {
             throw new Error(err);
         console.log("DB Connected!");
         app.listen(port, () => {
+            mydb.test();
             return console.log(`Express is listening at http://localhost:${port}`);
         });
     });

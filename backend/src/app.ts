@@ -10,7 +10,6 @@ const port = 4000;
 function myMiddleware (req, res, next) {
   if (req.method === 'GET') { 
     console.log(`${req.method} ${req.url}`)
-    console.log(process.env.DB_HOST)
   }
   next()
 }
@@ -31,7 +30,7 @@ app.get('/fields/:name', (req, res) => {
   var sql = 
   `show fields from ${process.env.DB_DATABASE}.${req.params.name}`;
   
-  con.query(sql, function (err: any, result: any, fields: any) {
+  con.query(sql, function (err: object, result: object, fields: object) {
     res.json({err: err, result: result });  
   });
 });
@@ -68,6 +67,7 @@ try {
     
     console.log("DB Connected!");
     app.listen(port, () => {
+      mydb.test()
       return console.log(`Express is listening at http://localhost:${port}`);
     });  
   }); 
