@@ -4,15 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-require('dotenv').config({ path: __dirname + '/.env' });
 //mysql
-var mysql = require('mysql');
-var con = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_DATABASE
-});
+var mydb = require('./mydb');
 //express
 const app = (0, express_1.default)();
 const port = 4000;
@@ -30,10 +23,7 @@ app.get('/dbcfg', (req, res) => {
     res.json({ request: 'Database configuration' });
 });
 app.get('/tables', (req, res) => {
-    var sql = `show tables from ${process.env.DB_DATABASE}`;
-    con.query(sql, function (err, result, fields) {
-        res.json({ err: err, result: result });
-    });
+    mydb.getMetadata((err, result, fields) => res.json({ err: err, result: result }));
 });
 app.get('/fields/:name', (req, res) => {
     var sql = `show fields from ${process.env.DB_DATABASE}.${req.params.name}`;
@@ -60,7 +50,7 @@ app.get('/:db', (req, res) => {
 });
 //init
 try {
-    con.connect(function (err) {
+    var con = mydb.connect(function (err) {
         if (err)
             throw new Error(err);
         console.log("DB Connected!");

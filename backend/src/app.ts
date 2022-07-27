@@ -1,17 +1,7 @@
 import express from 'express';
 
-require('dotenv').config({path: __dirname + '/.env'})
-
 //mysql
-var mysql = require('mysql');
-
-var con = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_DATABASE
-});
-
+var mydb = require('./mydb'); 
 
 //express
 const app = express();
@@ -34,12 +24,7 @@ app.get('/dbcfg', (req, res) => {
 });
 
 app.get('/tables', (req, res) => {
-  var sql = 
-  `show tables from ${process.env.DB_DATABASE}`;
-  
-  con.query(sql, function (err: any, result: any, fields: any) {
-    res.json({err: err, result: result });  
-  });
+  mydb.getMetadata( (err: any, result: any, fields: any) => res.json({err: err, result: result }));
 });
 
 app.get('/fields/:name', (req, res) => {
@@ -76,12 +61,9 @@ app.get('/:db', (req, res) => {
 });
 
 
-
-
-
 //init
 try {
-    con.connect(function(err) { 
+  var con = mydb.connect(function(err) { 
     if (err) throw new Error(err)
     
     console.log("DB Connected!");
