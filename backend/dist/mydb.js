@@ -43,43 +43,28 @@ exports.connect = (callback) => {
 };
 exports.test = () => {
     let meta = new DbDatabaseMetadata;
-    const onError = (err => console.log(err));
     connection.query(`show tables from ${process.env.DB_DATABASE}`, function (err, results, fields) {
+        let promises = new Array;
         results.forEach((result) => {
             for (let table in result) {
                 let tableName = result[table];
                 meta.AddTable(tableName);
+                promises.push(new Promise((resolve, reject) => {
+                    connection.query(`show fields from ${process.env.DB_DATABASE}.${tableName}`, function (err, results, fields) {
+                        if (err)
+                            reject(err);
+                        meta.AddFields(tableName, results);
+                        resolve();
+                    });
+                }));
             }
-            meta.Tables.forEach((table, tableName) => {
-                connection.query(`show fields from ${process.env.DB_DATABASE}.${tableName}`, function (err, results, fields) {
-                    meta.AddFields(tableName, results);
-                    console.log(JSON.stringify(meta));
-                });
-            });
+        });
+        Promise.all(promises).then(() => {
+            console.log(JSON.stringify(meta));
+        }).catch((err) => {
+            console.log(err);
         });
     });
-    /*
-        connection.query(`show tables from ${process.env.DB_DATABASE}`)
-            .on('error', onError)
-            .on('result', (result :any)=>{
-                let tables_count = Object.keys(result).length
-                console.log(tables_count)
-                for (let key in result) {
-                    let tableName :string = result[key];
-                    meta.AddTable(tableName);
-        
-                    connection.query(`show fields from ${process.env.DB_DATABASE}.${tableName}`)
-                        .on('error', onError)
-                        .on('result', (result :any)=>{
-                            meta.AddFields(tableName, result);
-                        })
-                        .on('end', ()=>{
-                            //console.log(JSON.stringify(meta))
-                        });
-                }
-                        
-            });
-    */
 };
 exports.getMetadata = (callback) => {
     connection.query(`show tables from ${process.env.DB_DATABASE}`, callback);
