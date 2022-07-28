@@ -12,9 +12,10 @@ declare class DbFieldMetadata {
     Assign(obj: object): void;
 }
 declare class DbTableMetadata {
-    Name: string;
+    Schema: string;
+    TableName: string;
     Fields: Array<DbFieldMetadata>;
-    constructor(name: string);
+    constructor(tableName: string, schema: string);
     GetField(fieldName: string): DbFieldMetadata;
 }
 declare class DbDatabaseMetadata {

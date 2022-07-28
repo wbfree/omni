@@ -19,9 +19,10 @@ class DbFieldMetadata {
     }
 }
 class DbTableMetadata {
-    constructor(name) {
+    constructor(tableName, schema) {
         this.Fields = new Array;
-        this.Name = name;
+        this.TableName = tableName;
+        this.Schema = schema;
     }
     ;
     GetField(fieldName) {
@@ -33,7 +34,7 @@ class DbDatabaseMetadata {
         this.Tables = new Array;
     }
     GetTable(tableName) {
-        return this.Tables.find(table => table.Name == tableName);
+        return this.Tables.find(table => table.TableName == tableName);
     }
 }
 var mysql = require('mysql');
@@ -76,13 +77,13 @@ class DbDatabaseMetadata_Loader {
             let promises = new Array;
             meta.Tables.forEach((tableData) => {
                 promises.push(new Promise((resolve, reject) => {
-                    var fields_query = `show fields from ${this.schema}.${tableData.Name}`;
+                    let fields_query = `show fields from ${this.schema}.${tableData.TableName}`;
                     this.conn.query(fields_query, function (err, results, fields) {
                         if (err)
                             reject(err);
-                        let table = meta.GetTable(tableData.Name);
+                        let table = meta.GetTable(tableData.TableName);
                         Object.values(results).map((obj) => {
-                            table.Fields.push(new DbFieldMetadata(tableData.Name, obj));
+                            table.Fields.push(new DbFieldMetadata(tableData.TableName, obj));
                         });
                         resolve();
                     });
@@ -96,14 +97,16 @@ class DbDatabaseMetadata_Loader {
         });
     }
     loadTables(meta) {
-        var table_query = `show tables from ${this.schema}`;
+        let table_query = `show tables from ${this.schema}`;
+        let schema = this.schema;
         return new Promise((resolve, reject) => {
             this.conn.query(table_query, function (err, results, fields) {
                 if (err)
                     reject(err);
                 results.forEach((result) => {
                     for (let table in result) {
-                        meta.Tables.push(new DbTableMetadata(result[table]));
+                        console.log(this.schema);
+                        meta.Tables.push(new DbTableMetadata(result[table], schema));
                     }
                 });
                 resolve(meta);

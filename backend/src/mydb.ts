@@ -25,11 +25,13 @@ class DbFieldMetadata {
 }
 
 class DbTableMetadata {
-    public Name: string
+    public Schema: string
+    public TableName: string
     public Fields: Array<DbFieldMetadata> = new Array<DbFieldMetadata>;
 
-    public constructor(name: string) {
-        this.Name = name
+    public constructor(tableName: string, schema: string) {
+        this.TableName = tableName
+        this.Schema = schema
     };
 
     public GetField(fieldName: string): DbFieldMetadata {
@@ -43,7 +45,7 @@ class DbDatabaseMetadata {
     public constructor() { }
 
     public GetTable(tableName: string): DbTableMetadata {
-        return this.Tables.find(table => table.Name == tableName)
+        return this.Tables.find(table => table.TableName == tableName)
     }
 }
 
@@ -94,13 +96,13 @@ class DbDatabaseMetadata_Loader {
 
             meta.Tables.forEach((tableData: DbTableMetadata) => {
                 promises.push(new Promise<void>((resolve, reject) => {
-                    var fields_query = `show fields from ${this.schema}.${tableData.Name}`
+                    let fields_query = `show fields from ${this.schema}.${tableData.TableName}`
                     this.conn.query(fields_query, function (err: object, results: Array<object>, fields: object) {
                         if (err) reject(err)
 
-                        let table: DbTableMetadata = meta.GetTable(tableData.Name)
+                        let table: DbTableMetadata = meta.GetTable(tableData.TableName)
                         Object.values(results).map((obj) => {
-                            table.Fields.push(new DbFieldMetadata(tableData.Name, obj));
+                            table.Fields.push(new DbFieldMetadata(tableData.TableName, obj));
                         })
                         resolve()
                     })
@@ -115,14 +117,16 @@ class DbDatabaseMetadata_Loader {
         })
     }
     private loadTables(meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata> {
-        var table_query = `show tables from ${this.schema}`
+        let table_query = `show tables from ${this.schema}`
+        let schema = this.schema
 
         return new Promise<DbDatabaseMetadata>((resolve, reject) => {
             this.conn.query(table_query, function (err: object, results: Array<object>, fields: object) {
                 if (err) reject(err)
                 results.forEach((result: Object) => {
                     for (let table in result) {
-                        meta.Tables.push(new DbTableMetadata(result[table]))
+                        console.log(this.schema)
+                        meta.Tables.push(new DbTableMetadata(result[table], schema))
                     }
                 })
                 resolve(meta)
