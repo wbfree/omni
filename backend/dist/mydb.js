@@ -11,11 +11,11 @@ require('dotenv').config({ path: __dirname + '/.env' });
 class DbFieldMetadata {
     constructor(tableName, fields) {
         this.TableName = tableName;
-        Object.assign(this, fields);
+        this.Assign(fields);
     }
     ;
-    AddKey(keys) {
-        Object.assign(this, keys);
+    Assign(obj) {
+        Object.assign(this, obj);
     }
 }
 class DbTableMetadata {
@@ -24,14 +24,6 @@ class DbTableMetadata {
         this.Name = name;
     }
     ;
-    AddFields(fields) {
-        Object.values(fields).map((obj) => {
-            this.Fields.push(new DbFieldMetadata(this.Name, obj));
-        });
-    }
-    AddKey(fieldName, key) {
-        this.GetField(fieldName).AddKey(key);
-    }
     GetField(fieldName) {
         return this.Fields.find(field => field.Field == fieldName);
     }
@@ -39,18 +31,6 @@ class DbTableMetadata {
 class DbDatabaseMetadata {
     constructor() {
         this.Tables = new Array;
-    }
-    AddTable(tableName) {
-        //console.log("AddTable " + tableName)
-        this.Tables.push(new DbTableMetadata(tableName));
-    }
-    AddFields(tableName, fields) {
-        //console.log("AddFields " + tableName)
-        this.GetTable(tableName).AddFields(fields);
-    }
-    AddKeys(tableName, fieldName, key) {
-        //console.log("AddKeys " + tableName + keys)
-        this.GetTable(tableName).AddKey(fieldName, key);
     }
     GetTable(tableName) {
         return this.Tables.find(table => table.Name == tableName);
@@ -67,79 +47,90 @@ exports.connect = (callback) => {
     connection.connect(callback);
     return connection;
 };
-function loadKeys(meta) {
-    var keys_query = `SELECT us.TABLE_NAME TableName, us.COLUMN_NAME Field,
+class DbDatabaseMetadata_Loader {
+    loadKeys(meta) {
+        var keys_query = `SELECT us.TABLE_NAME TableName, us.COLUMN_NAME Field,
 	        us.REFERENCED_TABLE_SCHEMA Referenced_Schema, 
             us.REFERENCED_TABLE_NAME Referenced_Table, 
             us.REFERENCED_COLUMN_NAME Referenced_Field
         FROM information_schema.KEY_COLUMN_USAGE us
             WHERE TABLE_SCHEMA='${process.env.DB_DATABASE}' and us.REFERENCED_TABLE_SCHEMA IS not null`;
-    return new Promise((resolve, reject) => {
-        connection.query(keys_query, function (err, results, fields) {
-            if (err)
-                reject(err);
-            results.forEach((keys) => {
-                let tableName = keys['TableName'];
-                let fieldName = keys['Field'];
-                meta.AddKeys(tableName, fieldName, keys);
-            });
-            resolve(meta);
-        });
-    });
-}
-function loadFields(meta) {
-    return new Promise((resolve, reject) => {
-        let promises = new Array;
-        meta.Tables.forEach((tableData) => {
-            promises.push(new Promise((resolve, reject) => {
-                connection.query(`show fields from ${process.env.DB_DATABASE}.${tableData.Name}`, function (err, results, fields) {
-                    if (err)
-                        reject(err);
-                    meta.AddFields(tableData.Name, results);
-                    resolve();
+        return new Promise((resolve, reject) => {
+            connection.query(keys_query, function (err, results, fields) {
+                if (err)
+                    reject(err);
+                results.forEach((keys) => {
+                    let tableName = keys['TableName'];
+                    let fieldName = keys['Field'];
+                    meta.GetTable(tableName).GetField(fieldName).Assign(keys);
                 });
-            }));
-        });
-        Promise.all(promises).then(() => {
-            resolve(meta);
-        }).catch((err) => {
-            reject(meta);
-        });
-    });
-}
-function loadTables(meta) {
-    return new Promise((resolve, reject) => {
-        connection.query(`show tables from ${process.env.DB_DATABASE}`, function (err, results, fields) {
-            if (err)
-                reject(err);
-            results.forEach((result) => {
-                for (let table in result) {
-                    meta.AddTable(result[table]);
-                }
+                resolve(meta);
             });
-            resolve(meta);
         });
-    });
+    }
+    loadFields(meta) {
+        return new Promise((resolve, reject) => {
+            let promises = new Array;
+            meta.Tables.forEach((tableData) => {
+                promises.push(new Promise((resolve, reject) => {
+                    var fields_query = `show fields from ${process.env.DB_DATABASE}.${tableData.Name}`;
+                    connection.query(fields_query, function (err, results, fields) {
+                        if (err)
+                            reject(err);
+                        let table = meta.GetTable(tableData.Name);
+                        Object.values(results).map((obj) => {
+                            table.Fields.push(new DbFieldMetadata(tableData.Name, obj));
+                        });
+                        resolve();
+                    });
+                }));
+            });
+            Promise.all(promises).then(() => {
+                resolve(meta);
+            }).catch((err) => {
+                reject(meta);
+            });
+        });
+    }
+    loadTables(meta) {
+        var table_query = `show tables from ${process.env.DB_DATABASE}`;
+        return new Promise((resolve, reject) => {
+            connection.query(table_query, function (err, results, fields) {
+                if (err)
+                    reject(err);
+                results.forEach((result) => {
+                    for (let table in result) {
+                        meta.Tables.push(new DbTableMetadata(result[table]));
+                    }
+                });
+                resolve(meta);
+            });
+        });
+    }
+    static LoadFromDb() {
+        return __awaiter(this, void 0, void 0, function* () {
+            let loader = new DbDatabaseMetadata_Loader();
+            const meta = yield loader.loadTables(new DbDatabaseMetadata);
+            yield loader.loadFields(meta);
+            return yield loader.loadKeys(meta);
+        });
+    }
+    static FromJSON(json_data) {
+        return Object.assign(new DbDatabaseMetadata, JSON.parse(json_data));
+    }
 }
-function loadMetadata() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const meta = yield loadTables(new DbDatabaseMetadata);
-        yield loadFields(meta);
-        return yield loadKeys(meta);
-    });
-}
-exports.Metadata = () => {
-    return loadMetadata();
-};
+exports.Metadata = () => __awaiter(this, void 0, void 0, function* () {
+    return yield DbDatabaseMetadata_Loader.LoadFromDb();
+});
+exports.Get = (obj) => __awaiter(this, void 0, void 0, function* () {
+    const meta = yield exports.Metadata();
+});
 exports.test = () => {
-    loadMetadata().then((meta_original) => {
+    DbDatabaseMetadata_Loader.LoadFromDb().then((meta_original) => {
         let json_data = JSON.stringify(meta_original);
-        let meta_from_json = Object.assign(new DbDatabaseMetadata, JSON.parse(json_data));
+        let meta_from_json = DbDatabaseMetadata_Loader.FromJSON(json_data);
         console.log(JSON.stringify(meta_from_json));
         //console.log(JSON.stringify(meta))
     });
-};
-exports.getMetadata = (callback) => {
-    connection.query(`show tables from ${process.env.DB_DATABASE}`, callback);
 };
 //# sourceMappingURL=mydb.js.map

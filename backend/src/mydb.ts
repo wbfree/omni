@@ -15,11 +15,11 @@ class DbFieldMetadata {
 
     public constructor(tableName: string, fields: object) {
         this.TableName = tableName
-        Object.assign(this, fields)
+        this.Assign(fields)
     };
 
-    public AddKey(keys: object): void {
-        Object.assign(this, keys)
+    public Assign(obj: object) {
+        Object.assign(this, obj)
     }
 
 }
@@ -32,14 +32,6 @@ class DbTableMetadata {
         this.Name = name
     };
 
-    public AddFields(fields: object): void {
-        Object.values(fields).map((obj) => {
-            this.Fields.push(new DbFieldMetadata(this.Name, obj));
-        })
-    }
-    public AddKey(fieldName: string, key: object): void {
-        this.GetField(fieldName).AddKey(key)
-    }
     public GetField(fieldName: string): DbFieldMetadata {
         return this.Fields.find(field => field.Field == fieldName)
     }
@@ -50,18 +42,6 @@ class DbDatabaseMetadata {
     public Tables: Array<DbTableMetadata> = new Array<DbTableMetadata>;
     public constructor() { }
 
-    public AddTable(tableName: string): void {
-        //console.log("AddTable " + tableName)
-        this.Tables.push(new DbTableMetadata(tableName))
-    }
-    public AddFields(tableName: string, fields: object): void {
-        //console.log("AddFields " + tableName)
-        this.GetTable(tableName).AddFields(fields)
-    }
-    public AddKeys(tableName: string, fieldName: string, key: object): void {
-        //console.log("AddKeys " + tableName + keys)
-        this.GetTable(tableName).AddKey(fieldName, key)
-    }
     public GetTable(tableName: string): DbTableMetadata {
         return this.Tables.find(table => table.Name == tableName)
     }
@@ -80,85 +60,100 @@ exports.connect = (callback: any) => {
     return connection;
 }
 
-function loadKeys(meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata> {
-    var keys_query =
-        `SELECT us.TABLE_NAME TableName, us.COLUMN_NAME Field,
+class DbDatabaseMetadata_Loader {
+    private loadKeys(meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata> {
+        var keys_query =
+            `SELECT us.TABLE_NAME TableName, us.COLUMN_NAME Field,
 	        us.REFERENCED_TABLE_SCHEMA Referenced_Schema, 
             us.REFERENCED_TABLE_NAME Referenced_Table, 
             us.REFERENCED_COLUMN_NAME Referenced_Field
         FROM information_schema.KEY_COLUMN_USAGE us
             WHERE TABLE_SCHEMA='${process.env.DB_DATABASE}' and us.REFERENCED_TABLE_SCHEMA IS not null`;
 
-    return new Promise<DbDatabaseMetadata>((resolve, reject) => {
-        connection.query(keys_query, function (err: object, results: Array<object>, fields: object) {
-            if (err) reject(err)
-            results.forEach((keys: Object) => {
-                let tableName: string = keys['TableName'];
-                let fieldName: string = keys['Field'];
-                meta.AddKeys(tableName, fieldName, keys);
-            })
-            resolve(meta)
-        })
-    })
-}
-
-function loadFields(meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata> {
-    return new Promise<DbDatabaseMetadata>((resolve, reject) => {
-        let promises: Array<Promise<void>> = new Array<Promise<void>>;
-
-        meta.Tables.forEach((tableData: DbTableMetadata) => {
-            promises.push(new Promise<void>((resolve, reject) => {
-                connection.query(`show fields from ${process.env.DB_DATABASE}.${tableData.Name}`, function (err: object, results: Array<object>, fields: object) {
-                    if (err) reject(err)
-                    meta.AddFields(tableData.Name, results);
-                    resolve()
+        return new Promise<DbDatabaseMetadata>((resolve, reject) => {
+            connection.query(keys_query, function (err: object, results: Array<object>, fields: object) {
+                if (err) reject(err)
+                results.forEach((keys: Object) => {
+                    let tableName: string = keys['TableName'];
+                    let fieldName: string = keys['Field'];
+                    meta.GetTable(tableName).GetField(fieldName).Assign(keys)
                 })
-            }))
-        })
-
-        Promise.all(promises).then(() => {
-            resolve(meta)
-        }).catch((err) => {
-            reject(meta)
-        })
-    })
-}
-
-function loadTables(meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata> {
-    return new Promise<DbDatabaseMetadata>((resolve, reject) => {
-        connection.query(`show tables from ${process.env.DB_DATABASE}`, function (err: object, results: Array<object>, fields: object) {
-            if (err) reject(err)
-            results.forEach((result: Object) => {
-                for (let table in result) {
-                    meta.AddTable(result[table]);
-                }
+                resolve(meta)
             })
-            resolve(meta)
         })
-    })
+    }
+
+    private loadFields(meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata> {
+        return new Promise<DbDatabaseMetadata>((resolve, reject) => {
+            let promises: Array<Promise<void>> = new Array<Promise<void>>;
+
+            meta.Tables.forEach((tableData: DbTableMetadata) => {
+                promises.push(new Promise<void>((resolve, reject) => {
+                    var fields_query = `show fields from ${process.env.DB_DATABASE}.${tableData.Name}`
+                    connection.query(fields_query, function (err: object, results: Array<object>, fields: object) {
+                        if (err) reject(err)
+
+                        let table: DbTableMetadata = meta.GetTable(tableData.Name)
+                        Object.values(results).map((obj) => {
+                            table.Fields.push(new DbFieldMetadata(tableData.Name, obj));
+                        })
+                        resolve()
+                    })
+                }))
+            })
+
+            Promise.all(promises).then(() => {
+                resolve(meta)
+            }).catch((err) => {
+                reject(meta)
+            })
+        })
+    }
+
+    private loadTables(meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata> {
+        var table_query = `show tables from ${process.env.DB_DATABASE}`
+
+        return new Promise<DbDatabaseMetadata>((resolve, reject) => {
+            connection.query(table_query, function (err: object, results: Array<object>, fields: object) {
+                if (err) reject(err)
+                results.forEach((result: Object) => {
+                    for (let table in result) {
+                        meta.Tables.push(new DbTableMetadata(result[table]))
+                    }
+                })
+                resolve(meta)
+            })
+        })
+    }
+
+    public static async LoadFromDb(): Promise<DbDatabaseMetadata> {
+        let loader: DbDatabaseMetadata_Loader = new DbDatabaseMetadata_Loader()
+        const meta = await loader.loadTables(new DbDatabaseMetadata);
+        await loader.loadFields(meta);
+        return await loader.loadKeys(meta);
+    }
+
+    public static FromJSON(json_data: string): DbDatabaseMetadata {
+        return Object.assign(new DbDatabaseMetadata, JSON.parse(json_data))
+    }
 }
 
-async function loadMetadata(): Promise<DbDatabaseMetadata> {
-    const meta = await loadTables(new DbDatabaseMetadata);
-    await loadFields(meta);
-    return await loadKeys(meta);
+
+exports.Metadata = async () => {
+    return await DbDatabaseMetadata_Loader.LoadFromDb()
 }
 
-exports.Metadata = () => {
-    return loadMetadata()
+exports.Get = async (obj: string) => {
+    const meta = await exports.Metadata();
 }
 
 exports.test = () => {
-    loadMetadata().then((meta_original: DbDatabaseMetadata) => {
+    DbDatabaseMetadata_Loader.LoadFromDb().then((meta_original: DbDatabaseMetadata) => {
         let json_data: string = JSON.stringify(meta_original);
-        let meta_from_json = Object.assign(new DbDatabaseMetadata, JSON.parse(json_data))
+        let meta_from_json = DbDatabaseMetadata_Loader.FromJSON(json_data)
 
         console.log(JSON.stringify(meta_from_json))
         //console.log(JSON.stringify(meta))
     })
 
-}
-
-exports.getMetadata = (callback: any) => {
-    connection.query(`show tables from ${process.env.DB_DATABASE}`, callback);
 }
