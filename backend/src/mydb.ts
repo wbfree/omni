@@ -95,9 +95,9 @@ function loadTables(meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata> {
     })
 }
 
-function loadMetadata(): Promise<DbDatabaseMetadata> {
-    return loadTables(new DbDatabaseMetadata)
-        .then((meta) => { return loadFields(meta) })
+async function loadMetadata(): Promise<DbDatabaseMetadata> {
+    const meta = await loadTables(new DbDatabaseMetadata);
+    return await loadFields(meta);
 }
 
 exports.test = () => {
