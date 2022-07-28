@@ -2,6 +2,7 @@ require('dotenv').config({ path: __dirname + '/.env' })
 
 
 class DbFieldMetadata {
+    public TableName: string;
     public Field: string;
     public Type: string;
     public Null: string;
@@ -12,7 +13,8 @@ class DbFieldMetadata {
     public Referenced_Table: string;
     public Referenced_Field: string;
 
-    public constructor(fields: object) {
+    public constructor(tableName: string, fields: object) {
+        this.TableName = tableName
         Object.assign(this, fields)
     };
 
@@ -32,9 +34,8 @@ class DbTableMetadata {
 
     public AddFields(fields: object): void {
         Object.values(fields).map((obj) => {
-            this.Fields.push(new DbFieldMetadata(obj));
+            this.Fields.push(new DbFieldMetadata(this.Name, obj));
         })
-
     }
     public AddKey(fieldName: string, key: object): void {
         this.GetField(fieldName).AddKey(key)
@@ -81,7 +82,7 @@ exports.connect = (callback: any) => {
 
 function loadKeys(meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata> {
     var keys_query =
-        `SELECT us.TABLE_NAME, us.COLUMN_NAME,
+        `SELECT us.TABLE_NAME TableName, us.COLUMN_NAME Field,
 	        us.REFERENCED_TABLE_SCHEMA Referenced_Schema, 
             us.REFERENCED_TABLE_NAME Referenced_Table, 
             us.REFERENCED_COLUMN_NAME Referenced_Field
@@ -92,8 +93,8 @@ function loadKeys(meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata> {
         connection.query(keys_query, function (err: object, results: Array<object>, fields: object) {
             if (err) reject(err)
             results.forEach((keys: Object) => {
-                let tableName: string = keys['TABLE_NAME'];
-                let fieldName: string = keys['COLUMN_NAME'];
+                let tableName: string = keys['TableName'];
+                let fieldName: string = keys['Field'];
                 meta.AddKeys(tableName, fieldName, keys);
             })
             resolve(meta)

@@ -9,7 +9,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 require('dotenv').config({ path: __dirname + '/.env' });
 class DbFieldMetadata {
-    constructor(fields) {
+    constructor(tableName, fields) {
+        this.TableName = tableName;
         Object.assign(this, fields);
     }
     ;
@@ -25,7 +26,7 @@ class DbTableMetadata {
     ;
     AddFields(fields) {
         Object.values(fields).map((obj) => {
-            this.Fields.push(new DbFieldMetadata(obj));
+            this.Fields.push(new DbFieldMetadata(this.Name, obj));
         });
     }
     AddKey(fieldName, key) {
@@ -67,7 +68,7 @@ exports.connect = (callback) => {
     return connection;
 };
 function loadKeys(meta) {
-    var keys_query = `SELECT us.TABLE_NAME, us.COLUMN_NAME,
+    var keys_query = `SELECT us.TABLE_NAME TableName, us.COLUMN_NAME Field,
 	        us.REFERENCED_TABLE_SCHEMA Referenced_Schema, 
             us.REFERENCED_TABLE_NAME Referenced_Table, 
             us.REFERENCED_COLUMN_NAME Referenced_Field
@@ -78,8 +79,8 @@ function loadKeys(meta) {
             if (err)
                 reject(err);
             results.forEach((keys) => {
-                let tableName = keys['TABLE_NAME'];
-                let fieldName = keys['COLUMN_NAME'];
+                let tableName = keys['TableName'];
+                let fieldName = keys['Field'];
                 meta.AddKeys(tableName, fieldName, keys);
             });
             resolve(meta);
