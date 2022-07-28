@@ -13,6 +13,9 @@ class DbFieldMetadata {
         Object.assign(this, fields);
     }
     ;
+    AddKey(keys) {
+        Object.assign(this, keys);
+    }
 }
 class DbTableMetadata {
     constructor(name) {
@@ -21,7 +24,15 @@ class DbTableMetadata {
     }
     ;
     AddFields(fields) {
-        this.Fields.push(new DbFieldMetadata(fields));
+        Object.values(fields).map((obj) => {
+            this.Fields.push(new DbFieldMetadata(obj));
+        });
+    }
+    AddKey(fieldName, key) {
+        this.GetField(fieldName).AddKey(key);
+    }
+    GetField(fieldName) {
+        return this.Fields.find(field => field.Field == fieldName);
     }
 }
 class DbDatabaseMetadata {
@@ -36,8 +47,12 @@ class DbDatabaseMetadata {
         //console.log("AddFields " + tableName)
         this.GetTable(tableName).AddFields(fields);
     }
+    AddKeys(tableName, fieldName, key) {
+        //console.log("AddKeys " + tableName + keys)
+        this.GetTable(tableName).AddKey(fieldName, key);
+    }
     GetTable(tableName) {
-        return this.Tables.find(table => table.Name = tableName);
+        return this.Tables.find(table => table.Name == tableName);
     }
 }
 var mysql = require('mysql');
@@ -51,6 +66,26 @@ exports.connect = (callback) => {
     connection.connect(callback);
     return connection;
 };
+function loadKeys(meta) {
+    var keys_query = `SELECT us.TABLE_NAME, us.COLUMN_NAME,
+	        us.REFERENCED_TABLE_SCHEMA Referenced_Schema, 
+            us.REFERENCED_TABLE_NAME Referenced_Table, 
+            us.REFERENCED_COLUMN_NAME Referenced_Field
+        FROM information_schema.KEY_COLUMN_USAGE us
+            WHERE TABLE_SCHEMA='${process.env.DB_DATABASE}' and us.REFERENCED_TABLE_SCHEMA IS not null`;
+    return new Promise((resolve, reject) => {
+        connection.query(keys_query, function (err, results, fields) {
+            if (err)
+                reject(err);
+            results.forEach((keys) => {
+                let tableName = keys['TABLE_NAME'];
+                let fieldName = keys['COLUMN_NAME'];
+                meta.AddKeys(tableName, fieldName, keys);
+            });
+            resolve(meta);
+        });
+    });
+}
 function loadFields(meta) {
     return new Promise((resolve, reject) => {
         let promises = new Array;
@@ -78,8 +113,7 @@ function loadTables(meta) {
                 reject(err);
             results.forEach((result) => {
                 for (let table in result) {
-                    let tableName = result[table];
-                    meta.AddTable(tableName);
+                    meta.AddTable(result[table]);
                 }
             });
             resolve(meta);
@@ -89,9 +123,13 @@ function loadTables(meta) {
 function loadMetadata() {
     return __awaiter(this, void 0, void 0, function* () {
         const meta = yield loadTables(new DbDatabaseMetadata);
-        return yield loadFields(meta);
+        yield loadFields(meta);
+        return yield loadKeys(meta);
     });
 }
+exports.Metadata = () => {
+    return loadMetadata();
+};
 exports.test = () => {
     loadMetadata().then((meta) => console.log(JSON.stringify(meta)));
 };

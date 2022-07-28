@@ -8,9 +8,17 @@ class DbFieldMetadata {
     public Key: string;
     public Default: string;
 
+    public Referenced_Schema: string;
+    public Referenced_Table: string;
+    public Referenced_Field: string;
+
     public constructor(fields: object) {
         Object.assign(this, fields)
     };
+
+    public AddKey(keys: object): void {
+        Object.assign(this, keys)
+    }
 
 }
 
@@ -23,7 +31,16 @@ class DbTableMetadata {
     };
 
     public AddFields(fields: object): void {
-        this.Fields.push(new DbFieldMetadata(fields));
+        Object.values(fields).map((obj) => {
+            this.Fields.push(new DbFieldMetadata(obj));
+        })
+
+    }
+    public AddKey(fieldName: string, key: object): void {
+        this.GetField(fieldName).AddKey(key)
+    }
+    public GetField(fieldName: string): DbFieldMetadata {
+        return this.Fields.find(field => field.Field == fieldName)
     }
 
 }
@@ -40,8 +57,12 @@ class DbDatabaseMetadata {
         //console.log("AddFields " + tableName)
         this.GetTable(tableName).AddFields(fields)
     }
+    public AddKeys(tableName: string, fieldName: string, key: object): void {
+        //console.log("AddKeys " + tableName + keys)
+        this.GetTable(tableName).AddKey(fieldName, key)
+    }
     public GetTable(tableName: string): DbTableMetadata {
-        return this.Tables.find(table => table.Name = tableName)
+        return this.Tables.find(table => table.Name == tableName)
     }
 }
 
@@ -56,6 +77,28 @@ var connection = mysql.createConnection({
 exports.connect = (callback: any) => {
     connection.connect(callback)
     return connection;
+}
+
+function loadKeys(meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata> {
+    var keys_query =
+        `SELECT us.TABLE_NAME, us.COLUMN_NAME,
+	        us.REFERENCED_TABLE_SCHEMA Referenced_Schema, 
+            us.REFERENCED_TABLE_NAME Referenced_Table, 
+            us.REFERENCED_COLUMN_NAME Referenced_Field
+        FROM information_schema.KEY_COLUMN_USAGE us
+            WHERE TABLE_SCHEMA='${process.env.DB_DATABASE}' and us.REFERENCED_TABLE_SCHEMA IS not null`;
+
+    return new Promise<DbDatabaseMetadata>((resolve, reject) => {
+        connection.query(keys_query, function (err: object, results: Array<object>, fields: object) {
+            if (err) reject(err)
+            results.forEach((keys: Object) => {
+                let tableName: string = keys['TABLE_NAME'];
+                let fieldName: string = keys['COLUMN_NAME'];
+                meta.AddKeys(tableName, fieldName, keys);
+            })
+            resolve(meta)
+        })
+    })
 }
 
 function loadFields(meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata> {
@@ -86,8 +129,7 @@ function loadTables(meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata> {
             if (err) reject(err)
             results.forEach((result: Object) => {
                 for (let table in result) {
-                    let tableName: string = result[table];
-                    meta.AddTable(tableName);
+                    meta.AddTable(result[table]);
                 }
             })
             resolve(meta)
@@ -97,7 +139,12 @@ function loadTables(meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata> {
 
 async function loadMetadata(): Promise<DbDatabaseMetadata> {
     const meta = await loadTables(new DbDatabaseMetadata);
-    return await loadFields(meta);
+    await loadFields(meta);
+    return await loadKeys(meta);
+}
+
+exports.Metadata = () => {
+    return loadMetadata()
 }
 
 exports.test = () => {

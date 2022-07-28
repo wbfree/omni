@@ -18,16 +18,9 @@ function myMiddleware(req, res, next) {
 app.set('json spaces', 4);
 app.use(express_1.default.json());
 app.use(myMiddleware);
-app.get('/dbcfg', (req, res) => {
-    res.json({ request: 'Database configuration' });
-});
-app.get('/tables', (req, res) => {
-    mydb.getMetadata((err, result, fields) => res.json({ err: err, result: result }));
-});
-app.get('/fields/:name', (req, res) => {
-    var sql = `show fields from ${process.env.DB_DATABASE}.${req.params.name}`;
-    con.query(sql, function (err, result, fields) {
-        res.json({ err: err, result: result });
+app.get('/metadata', (req, res) => {
+    mydb.Metadata().then((meta) => {
+        res.json({ result: meta });
     });
 });
 app.get('/keys', (req, res) => {
@@ -41,11 +34,6 @@ app.get('/keys', (req, res) => {
 });
 app.get('/favicon.ico', (req, res) => {
     res.json({ request: 'No icon' });
-});
-app.get('/:db', (req, res) => {
-    con.query("SELECT * FROM " + req.params.db, function (err, result, fields) {
-        res.json({ err: err, result: result, fields: fields });
-    });
 });
 //init
 try {
