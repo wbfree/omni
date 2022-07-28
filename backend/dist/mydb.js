@@ -134,7 +134,7 @@ exports.Get = (obj) => __awaiter(this, void 0, void 0, function* () {
             query_result.Err = err;
             query_result.Results = results;
             if (err)
-                reject(query_result);
+                resolve(query_result);
             DbDatabaseMetadata_Loader.LoadFromDb(connection).then((meta) => {
                 query_result.Metadata = meta.GetTable(obj);
                 resolve(query_result);

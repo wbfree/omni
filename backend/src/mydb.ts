@@ -160,7 +160,7 @@ exports.Get = async (obj: string): Promise<QueryResult> => {
             query_result.Results = results
 
             if (err)
-                reject(query_result)
+                resolve(query_result)
 
             DbDatabaseMetadata_Loader.LoadFromDb(connection).then((meta) => {
                 query_result.Metadata = meta.GetTable(obj)

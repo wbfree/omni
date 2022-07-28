@@ -28,7 +28,7 @@ app.get('/favicon.ico', (req, res) => {
 });
 app.get('/:obj', (req, res) => {
     mydb.Get(req.params.obj).then((results) => {
-        res.json({ results: results });
+        res.json(results);
     });
 });
 //init
