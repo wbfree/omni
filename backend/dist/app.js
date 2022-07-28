@@ -26,6 +26,11 @@ app.get('/metadata', (req, res) => {
 app.get('/favicon.ico', (req, res) => {
     res.json({ request: 'No icon' });
 });
+app.get('/:obj', (req, res) => {
+    mydb.Get(req.params.obj).then((results) => {
+        res.json({ results: results });
+    });
+});
 //init
 try {
     var con = mydb.connect(function (err) {

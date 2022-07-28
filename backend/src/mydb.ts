@@ -61,6 +61,11 @@ exports.connect = (callback: any) => {
 }
 
 class DbDatabaseMetadata_Loader {
+    private conn: any
+    public constructor(connection: any) {
+        this.conn = connection
+    }
+
     private loadKeys(meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata> {
         var keys_query =
             `SELECT us.TABLE_NAME TableName, us.COLUMN_NAME Field,
@@ -71,7 +76,7 @@ class DbDatabaseMetadata_Loader {
             WHERE TABLE_SCHEMA='${process.env.DB_DATABASE}' and us.REFERENCED_TABLE_SCHEMA IS not null`;
 
         return new Promise<DbDatabaseMetadata>((resolve, reject) => {
-            connection.query(keys_query, function (err: object, results: Array<object>, fields: object) {
+            this.conn.query(keys_query, function (err: object, results: Array<object>, fields: object) {
                 if (err) reject(err)
                 results.forEach((keys: Object) => {
                     let tableName: string = keys['TableName'];
@@ -82,7 +87,6 @@ class DbDatabaseMetadata_Loader {
             })
         })
     }
-
     private loadFields(meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata> {
         return new Promise<DbDatabaseMetadata>((resolve, reject) => {
             let promises: Array<Promise<void>> = new Array<Promise<void>>;
@@ -90,7 +94,7 @@ class DbDatabaseMetadata_Loader {
             meta.Tables.forEach((tableData: DbTableMetadata) => {
                 promises.push(new Promise<void>((resolve, reject) => {
                     var fields_query = `show fields from ${process.env.DB_DATABASE}.${tableData.Name}`
-                    connection.query(fields_query, function (err: object, results: Array<object>, fields: object) {
+                    this.conn.query(fields_query, function (err: object, results: Array<object>, fields: object) {
                         if (err) reject(err)
 
                         let table: DbTableMetadata = meta.GetTable(tableData.Name)
@@ -109,12 +113,11 @@ class DbDatabaseMetadata_Loader {
             })
         })
     }
-
     private loadTables(meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata> {
         var table_query = `show tables from ${process.env.DB_DATABASE}`
 
         return new Promise<DbDatabaseMetadata>((resolve, reject) => {
-            connection.query(table_query, function (err: object, results: Array<object>, fields: object) {
+            this.conn.query(table_query, function (err: object, results: Array<object>, fields: object) {
                 if (err) reject(err)
                 results.forEach((result: Object) => {
                     for (let table in result) {
@@ -126,8 +129,8 @@ class DbDatabaseMetadata_Loader {
         })
     }
 
-    public static async LoadFromDb(): Promise<DbDatabaseMetadata> {
-        let loader: DbDatabaseMetadata_Loader = new DbDatabaseMetadata_Loader()
+    public static async LoadFromDb(conn: any): Promise<DbDatabaseMetadata> {
+        let loader: DbDatabaseMetadata_Loader = new DbDatabaseMetadata_Loader(conn)
         const meta = await loader.loadTables(new DbDatabaseMetadata);
         await loader.loadFields(meta);
         return await loader.loadKeys(meta);
@@ -138,9 +141,8 @@ class DbDatabaseMetadata_Loader {
     }
 }
 
-
 exports.Metadata = async () => {
-    return await DbDatabaseMetadata_Loader.LoadFromDb()
+    return await DbDatabaseMetadata_Loader.LoadFromDb(connection)
 }
 
 exports.Get = async (obj: string) => {
@@ -148,7 +150,7 @@ exports.Get = async (obj: string) => {
 }
 
 exports.test = () => {
-    DbDatabaseMetadata_Loader.LoadFromDb().then((meta_original: DbDatabaseMetadata) => {
+    DbDatabaseMetadata_Loader.LoadFromDb(connection).then((meta_original: DbDatabaseMetadata) => {
         let json_data: string = JSON.stringify(meta_original);
         let meta_from_json = DbDatabaseMetadata_Loader.FromJSON(json_data)
 

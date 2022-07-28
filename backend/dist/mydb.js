@@ -48,6 +48,9 @@ exports.connect = (callback) => {
     return connection;
 };
 class DbDatabaseMetadata_Loader {
+    constructor(connection) {
+        this.conn = connection;
+    }
     loadKeys(meta) {
         var keys_query = `SELECT us.TABLE_NAME TableName, us.COLUMN_NAME Field,
 	        us.REFERENCED_TABLE_SCHEMA Referenced_Schema, 
@@ -56,7 +59,7 @@ class DbDatabaseMetadata_Loader {
         FROM information_schema.KEY_COLUMN_USAGE us
             WHERE TABLE_SCHEMA='${process.env.DB_DATABASE}' and us.REFERENCED_TABLE_SCHEMA IS not null`;
         return new Promise((resolve, reject) => {
-            connection.query(keys_query, function (err, results, fields) {
+            this.conn.query(keys_query, function (err, results, fields) {
                 if (err)
                     reject(err);
                 results.forEach((keys) => {
@@ -74,7 +77,7 @@ class DbDatabaseMetadata_Loader {
             meta.Tables.forEach((tableData) => {
                 promises.push(new Promise((resolve, reject) => {
                     var fields_query = `show fields from ${process.env.DB_DATABASE}.${tableData.Name}`;
-                    connection.query(fields_query, function (err, results, fields) {
+                    this.conn.query(fields_query, function (err, results, fields) {
                         if (err)
                             reject(err);
                         let table = meta.GetTable(tableData.Name);
@@ -95,7 +98,7 @@ class DbDatabaseMetadata_Loader {
     loadTables(meta) {
         var table_query = `show tables from ${process.env.DB_DATABASE}`;
         return new Promise((resolve, reject) => {
-            connection.query(table_query, function (err, results, fields) {
+            this.conn.query(table_query, function (err, results, fields) {
                 if (err)
                     reject(err);
                 results.forEach((result) => {
@@ -107,9 +110,9 @@ class DbDatabaseMetadata_Loader {
             });
         });
     }
-    static LoadFromDb() {
+    static LoadFromDb(conn) {
         return __awaiter(this, void 0, void 0, function* () {
-            let loader = new DbDatabaseMetadata_Loader();
+            let loader = new DbDatabaseMetadata_Loader(conn);
             const meta = yield loader.loadTables(new DbDatabaseMetadata);
             yield loader.loadFields(meta);
             return yield loader.loadKeys(meta);
@@ -120,13 +123,13 @@ class DbDatabaseMetadata_Loader {
     }
 }
 exports.Metadata = () => __awaiter(this, void 0, void 0, function* () {
-    return yield DbDatabaseMetadata_Loader.LoadFromDb();
+    return yield DbDatabaseMetadata_Loader.LoadFromDb(connection);
 });
 exports.Get = (obj) => __awaiter(this, void 0, void 0, function* () {
     const meta = yield exports.Metadata();
 });
 exports.test = () => {
-    DbDatabaseMetadata_Loader.LoadFromDb().then((meta_original) => {
+    DbDatabaseMetadata_Loader.LoadFromDb(connection).then((meta_original) => {
         let json_data = JSON.stringify(meta_original);
         let meta_from_json = DbDatabaseMetadata_Loader.FromJSON(json_data);
         console.log(JSON.stringify(meta_from_json));
