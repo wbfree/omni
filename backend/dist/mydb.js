@@ -2,17 +2,13 @@ require('dotenv').config({ path: __dirname + '/.env' });
 class DbFieldMetadata {
     constructor(fields) {
         Object.assign(this, fields);
-        for (var key in fields) {
-            if (this.hasOwnProperty(key)) {
-                this[key] = fields[key];
-            }
-        }
     }
     ;
 }
 class DbTableMetadata {
-    constructor() {
+    constructor(name) {
         this.Fields = new Array;
+        this.Name = name;
     }
     ;
     AddFields(fields) {
@@ -21,13 +17,18 @@ class DbTableMetadata {
 }
 class DbDatabaseMetadata {
     constructor() {
-        this.Tables = new Map;
+        this.Tables = new Array;
     }
     AddTable(tableName) {
-        this.Tables[tableName] = new DbTableMetadata;
+        //console.log("AddTable " + tableName)
+        this.Tables.push(new DbTableMetadata(tableName));
     }
     AddFields(tableName, fields) {
-        this.Tables[tableName].AddFields(fields);
+        //console.log("AddFields " + tableName)
+        this.GetTable(tableName).AddFields(fields);
+    }
+    GetTable(tableName) {
+        return this.Tables.find(table => table.Name = tableName);
     }
 }
 var mysql = require('mysql');
@@ -41,30 +42,47 @@ exports.connect = (callback) => {
     connection.connect(callback);
     return connection;
 };
-exports.test = () => {
-    let meta = new DbDatabaseMetadata;
-    connection.query(`show tables from ${process.env.DB_DATABASE}`, function (err, results, fields) {
+function loadFields(meta) {
+    return new Promise((resolve, reject) => {
         let promises = new Array;
-        results.forEach((result) => {
-            for (let table in result) {
-                let tableName = result[table];
-                meta.AddTable(tableName);
-                promises.push(new Promise((resolve, reject) => {
-                    connection.query(`show fields from ${process.env.DB_DATABASE}.${tableName}`, function (err, results, fields) {
-                        if (err)
-                            reject(err);
-                        meta.AddFields(tableName, results);
-                        resolve();
-                    });
-                }));
-            }
+        meta.Tables.forEach((tableData) => {
+            promises.push(new Promise((resolve, reject) => {
+                connection.query(`show fields from ${process.env.DB_DATABASE}.${tableData.Name}`, function (err, results, fields) {
+                    if (err)
+                        reject(err);
+                    meta.AddFields(tableData.Name, results);
+                    resolve();
+                });
+            }));
         });
         Promise.all(promises).then(() => {
-            console.log(JSON.stringify(meta));
+            resolve(meta);
         }).catch((err) => {
-            console.log(err);
+            reject(meta);
         });
     });
+}
+function loadTables(meta) {
+    return new Promise((resolve, reject) => {
+        connection.query(`show tables from ${process.env.DB_DATABASE}`, function (err, results, fields) {
+            if (err)
+                reject(err);
+            results.forEach((result) => {
+                for (let table in result) {
+                    let tableName = result[table];
+                    meta.AddTable(tableName);
+                }
+            });
+            resolve(meta);
+        });
+    });
+}
+function loadMetadata() {
+    return loadTables(new DbDatabaseMetadata)
+        .then((meta) => { return loadFields(meta); });
+}
+exports.test = () => {
+    loadMetadata().then((meta) => console.log(JSON.stringify(meta)));
 };
 exports.getMetadata = (callback) => {
     connection.query(`show tables from ${process.env.DB_DATABASE}`, callback);

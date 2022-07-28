@@ -10,19 +10,17 @@ class DbFieldMetadata {
 
     public constructor(fields: object) {
         Object.assign(this, fields)
-
-        for (var key in fields) {
-            if (this.hasOwnProperty(key)) {
-                this[key] = fields[key];
-            }
-        }
     };
 
 }
 
 class DbTableMetadata {
-    public constructor() { };
+    public Name: string
     public Fields: Array<DbFieldMetadata> = new Array<DbFieldMetadata>;
+
+    public constructor(name: string) {
+        this.Name = name
+    };
 
     public AddFields(fields: object): void {
         this.Fields.push(new DbFieldMetadata(fields));
@@ -31,16 +29,20 @@ class DbTableMetadata {
 }
 
 class DbDatabaseMetadata {
-    public Tables: Map<string, DbTableMetadata> = new Map<string, DbTableMetadata>;
+    public Tables: Array<DbTableMetadata> = new Array<DbTableMetadata>;
     public constructor() { }
 
     public AddTable(tableName: string): void {
-        this.Tables[tableName] = new DbTableMetadata;
+        //console.log("AddTable " + tableName)
+        this.Tables.push(new DbTableMetadata(tableName))
     }
     public AddFields(tableName: string, fields: object): void {
-        this.Tables[tableName].AddFields(fields);
+        //console.log("AddFields " + tableName)
+        this.GetTable(tableName).AddFields(fields)
     }
-
+    public GetTable(tableName: string): DbTableMetadata {
+        return this.Tables.find(table => table.Name = tableName)
+    }
 }
 
 var mysql = require('mysql');
@@ -56,32 +58,50 @@ exports.connect = (callback: any) => {
     return connection;
 }
 
-exports.test = () => {
-    let meta = new DbDatabaseMetadata;
-
-    connection.query(`show tables from ${process.env.DB_DATABASE}`, function (err: object, results: Array<object>, fields: object) {
+function loadFields(meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata> {
+    return new Promise<DbDatabaseMetadata>((resolve, reject) => {
         let promises: Array<Promise<void>> = new Array<Promise<void>>;
-        results.forEach((result: Object) => {
-            for (let table in result) {
-                let tableName: string = result[table];
-                meta.AddTable(tableName);
 
-                promises.push(new Promise<void>((resolve, reject) => {
-                    connection.query(`show fields from ${process.env.DB_DATABASE}.${tableName}`, function (err: object, results: Array<object>, fields: object) {
-                        if (err) reject(err)
-                        meta.AddFields(tableName, results);
-                        resolve()
-                    })
-                }))
-            }
+        meta.Tables.forEach((tableData: DbTableMetadata) => {
+            promises.push(new Promise<void>((resolve, reject) => {
+                connection.query(`show fields from ${process.env.DB_DATABASE}.${tableData.Name}`, function (err: object, results: Array<object>, fields: object) {
+                    if (err) reject(err)
+                    meta.AddFields(tableData.Name, results);
+                    resolve()
+                })
+            }))
         })
+
         Promise.all(promises).then(() => {
-            console.log(JSON.stringify(meta))
+            resolve(meta)
         }).catch((err) => {
-            console.log(err);
+            reject(meta)
         })
-    });
+    })
+}
 
+function loadTables(meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata> {
+    return new Promise<DbDatabaseMetadata>((resolve, reject) => {
+        connection.query(`show tables from ${process.env.DB_DATABASE}`, function (err: object, results: Array<object>, fields: object) {
+            if (err) reject(err)
+            results.forEach((result: Object) => {
+                for (let table in result) {
+                    let tableName: string = result[table];
+                    meta.AddTable(tableName);
+                }
+            })
+            resolve(meta)
+        })
+    })
+}
+
+function loadMetadata(): Promise<DbDatabaseMetadata> {
+    return loadTables(new DbDatabaseMetadata)
+        .then((meta) => { return loadFields(meta) })
+}
+
+exports.test = () => {
+    loadMetadata().then((meta: DbDatabaseMetadata) => console.log(JSON.stringify(meta)))
 }
 
 exports.getMetadata = (callback: any) => {
