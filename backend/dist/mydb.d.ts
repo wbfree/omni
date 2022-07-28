@@ -26,7 +26,8 @@ declare var mysql: any;
 declare var connection: any;
 declare class DbDatabaseMetadata_Loader {
     private conn;
-    constructor(connection: any);
+    private schema;
+    constructor(connection: any, schema: string);
     private loadKeys;
     private loadFields;
     private loadTables;
