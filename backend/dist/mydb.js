@@ -125,8 +125,22 @@ class DbDatabaseMetadata_Loader {
 exports.Metadata = () => __awaiter(this, void 0, void 0, function* () {
     return yield DbDatabaseMetadata_Loader.LoadFromDb(connection);
 });
+class QueryResult {
+}
 exports.Get = (obj) => __awaiter(this, void 0, void 0, function* () {
-    const meta = yield exports.Metadata();
+    return new Promise((resolve, reject) => {
+        connection.query(`select * from ${obj}`, function (err, results, fields) {
+            let query_result = new QueryResult;
+            query_result.Err = err;
+            query_result.Results = results;
+            if (err)
+                reject(query_result);
+            DbDatabaseMetadata_Loader.LoadFromDb(connection).then((meta) => {
+                query_result.Metadata = meta.GetTable(obj);
+                resolve(query_result);
+            });
+        });
+    });
 });
 exports.test = () => {
     DbDatabaseMetadata_Loader.LoadFromDb(connection).then((meta_original) => {

@@ -145,8 +145,29 @@ exports.Metadata = async () => {
     return await DbDatabaseMetadata_Loader.LoadFromDb(connection)
 }
 
-exports.Get = async (obj: string) => {
-    const meta = await exports.Metadata();
+class QueryResult {
+    public Err: object
+    public Results: Array<object>
+    public Metadata: DbTableMetadata;
+
+}
+
+exports.Get = async (obj: string): Promise<QueryResult> => {
+    return new Promise((resolve, reject) => {
+        connection.query(`select * from ${obj}`, function (err: object, results: Array<object>, fields: object) {
+            let query_result = new QueryResult;
+            query_result.Err = err
+            query_result.Results = results
+
+            if (err)
+                reject(query_result)
+
+            DbDatabaseMetadata_Loader.LoadFromDb(connection).then((meta) => {
+                query_result.Metadata = meta.GetTable(obj)
+                resolve(query_result)
+            })
+        })
+    })
 }
 
 exports.test = () => {
