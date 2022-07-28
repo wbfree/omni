@@ -24,18 +24,6 @@ app.get('/metadata', (req, res) => {
   })
 });
 
-app.get('/keys', (req, res) => {
-  var sql =
-    `SELECT us.TABLE_SCHEMA, us.TABLE_NAME, us.COLUMN_NAME,
-	us.REFERENCED_TABLE_SCHEMA, us.REFERENCED_TABLE_NAME, us.REFERENCED_COLUMN_NAME
-  FROM information_schema.KEY_COLUMN_USAGE us
-  WHERE TABLE_SCHEMA='${process.env.DB_DATABASE}'`;
-
-  con.query(sql, function (err: any, result: any, fields: any) {
-    res.json({ err: err, result: result });
-  });
-});
-
 app.get('/favicon.ico', (req, res) => {
   res.json({ request: 'No icon' });
 });

@@ -132,7 +132,12 @@ exports.Metadata = () => {
     return loadMetadata();
 };
 exports.test = () => {
-    loadMetadata().then((meta) => console.log(JSON.stringify(meta)));
+    loadMetadata().then((meta_original) => {
+        let json_data = JSON.stringify(meta_original);
+        let meta_from_json = Object.assign(new DbDatabaseMetadata, JSON.parse(json_data));
+        console.log(JSON.stringify(meta_from_json));
+        //console.log(JSON.stringify(meta))
+    });
 };
 exports.getMetadata = (callback) => {
     connection.query(`show tables from ${process.env.DB_DATABASE}`, callback);

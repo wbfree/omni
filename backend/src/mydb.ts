@@ -149,7 +149,14 @@ exports.Metadata = () => {
 }
 
 exports.test = () => {
-    loadMetadata().then((meta: DbDatabaseMetadata) => console.log(JSON.stringify(meta)))
+    loadMetadata().then((meta_original: DbDatabaseMetadata) => {
+        let json_data: string = JSON.stringify(meta_original);
+        let meta_from_json = Object.assign(new DbDatabaseMetadata, JSON.parse(json_data))
+
+        console.log(JSON.stringify(meta_from_json))
+        //console.log(JSON.stringify(meta))
+    })
+
 }
 
 exports.getMetadata = (callback: any) => {
