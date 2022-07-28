@@ -19,7 +19,7 @@ app.use(express.json());
 app.use(myMiddleware)
 
 app.get('/metadata', (req, res) => {
-  mydb.Metadata().then((meta) => {
+  mydb.Metadata().then((meta: DbDatabaseMetadata) => {
     res.json({ result: meta })
   })
 });
@@ -29,7 +29,7 @@ app.get('/favicon.ico', (req, res) => {
 });
 
 app.get('/:obj', (req, res) => {
-  mydb.Get(req.params.obj).then((results) => {
+  mydb.Get(req.params.obj).then((results: QueryResult) => {
     res.json(results);
   })
 
@@ -38,7 +38,7 @@ app.get('/:obj', (req, res) => {
 
 //init
 try {
-  var con = mydb.connect(function (err) {
+  var con = mydb.connect(function (err: string) {
     if (err) throw new Error(err)
 
     console.log("DB Connected!");

@@ -141,7 +141,7 @@ class DbDatabaseMetadata_Loader {
     }
 }
 
-exports.Metadata = async () => {
+exports.Metadata = async (): Promise<DbDatabaseMetadata> => {
     return await DbDatabaseMetadata_Loader.LoadFromDb(connection)
 }
 
