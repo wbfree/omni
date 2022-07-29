@@ -22,7 +22,7 @@ class DbTableMetadata {
     constructor(tableName, schema) {
         this.Fields = new Array;
         this.TableName = tableName;
-        this.Schema = schema;
+        this.SchemaName = schema;
     }
     ;
     GetField(fieldName) {
@@ -33,8 +33,8 @@ class DbDatabaseMetadata {
     constructor() {
         this.Tables = new Array;
     }
-    GetTable(tableName) {
-        return this.Tables.find(table => table.TableName == tableName);
+    GetTable(tableName, schema) {
+        return this.Tables.find(table => table.TableName == tableName && table.SchemaName == schema);
     }
 }
 var mysql = require('mysql');
@@ -48,40 +48,41 @@ exports.connect = (callback) => {
     return connection;
 };
 class DbDatabaseMetadata_Loader {
-    constructor(connection, schema) {
+    constructor(connection) {
         this.conn = connection;
-        this.schema = schema;
     }
-    loadKeys(meta) {
-        var keys_query = `SELECT us.TABLE_NAME TableName, us.COLUMN_NAME Field,
+    loadKeys(meta, schema) {
+        var keys_query = `SELECT us.TABLE_SCHEMA SchemaName, us.TABLE_NAME TableName, us.COLUMN_NAME Field,
 	        us.REFERENCED_TABLE_SCHEMA Referenced_Schema, 
             us.REFERENCED_TABLE_NAME Referenced_Table, 
             us.REFERENCED_COLUMN_NAME Referenced_Field
         FROM information_schema.KEY_COLUMN_USAGE us
-            WHERE TABLE_SCHEMA='${this.schema}'`;
+            WHERE TABLE_SCHEMA='${schema}'`;
         return new Promise((resolve, reject) => {
             this.conn.query(keys_query, function (err, results, fields) {
                 if (err)
                     reject(err);
                 results.forEach((keys) => {
+                    let schemaName = keys['SchemaName'];
                     let tableName = keys['TableName'];
                     let fieldName = keys['Field'];
-                    meta.GetTable(tableName).GetField(fieldName).Assign(keys);
+                    meta.GetTable(tableName, schemaName).GetField(fieldName).Assign(keys);
                 });
                 resolve(meta);
             });
         });
     }
-    loadFields(meta) {
+    loadFields(meta, schema) {
         return new Promise((resolve, reject) => {
             let promises = new Array;
-            meta.Tables.forEach((tableData) => {
+            let schema_tables = meta.Tables.filter((tableData) => { return tableData.SchemaName == schema; });
+            schema_tables.forEach((tableData) => {
                 promises.push(new Promise((resolve, reject) => {
-                    let fields_query = `show fields from ${this.schema}.${tableData.TableName}`;
+                    let fields_query = `show fields from ${schema}.${tableData.TableName}`;
                     this.conn.query(fields_query, function (err, results, fields) {
                         if (err)
                             reject(err);
-                        let table = meta.GetTable(tableData.TableName);
+                        let table = meta.GetTable(tableData.TableName, schema);
                         Object.values(results).map((obj) => {
                             table.Fields.push(new DbFieldMetadata(tableData.TableName, obj));
                         });
@@ -96,16 +97,14 @@ class DbDatabaseMetadata_Loader {
             });
         });
     }
-    loadTables(meta) {
-        let table_query = `show tables from ${this.schema}`;
-        let schema = this.schema;
+    loadTables(meta, schema) {
+        let table_query = `show tables from ${schema}`;
         return new Promise((resolve, reject) => {
             this.conn.query(table_query, function (err, results, fields) {
                 if (err)
                     reject(err);
                 results.forEach((result) => {
                     for (let table in result) {
-                        console.log(this.schema);
                         meta.Tables.push(new DbTableMetadata(result[table], schema));
                     }
                 });
@@ -113,20 +112,21 @@ class DbDatabaseMetadata_Loader {
             });
         });
     }
-    static LoadFromDb(conn) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let loader = new DbDatabaseMetadata_Loader(conn, process.env.DB_DATABASE);
-            const meta = yield loader.loadTables(new DbDatabaseMetadata);
-            yield loader.loadFields(meta);
-            return yield loader.loadKeys(meta);
-        });
+    static FromJSON(json_data, meta) {
+        return Object.assign(meta, JSON.parse(json_data));
     }
-    static FromJSON(json_data) {
-        return Object.assign(new DbDatabaseMetadata, JSON.parse(json_data));
+    FromSchema(schema, meta) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.loadTables(meta, schema);
+            yield this.loadFields(meta, schema);
+            return yield this.loadKeys(meta, schema);
+        });
     }
 }
 exports.Metadata = () => __awaiter(this, void 0, void 0, function* () {
-    return yield DbDatabaseMetadata_Loader.LoadFromDb(connection);
+    let loader = new DbDatabaseMetadata_Loader(connection);
+    let meta = yield loader.FromSchema(process.env.DB_DATABASE, new DbDatabaseMetadata);
+    return yield loader.FromSchema(process.env.DB_DATABASE_COMMON, meta);
 });
 class QueryResult {
 }
@@ -138,17 +138,22 @@ exports.Get = (obj) => __awaiter(this, void 0, void 0, function* () {
             query_result.Results = results;
             if (err)
                 resolve(query_result);
-            DbDatabaseMetadata_Loader.LoadFromDb(connection).then((meta) => {
-                query_result.Metadata = meta.GetTable(obj);
+            new DbDatabaseMetadata_Loader(connection).FromSchema(process.env.DB_DATABASE, new DbDatabaseMetadata).then((meta) => {
+                query_result.Metadata = meta.GetTable(obj, process.env.DB_DATABASE);
                 resolve(query_result);
             });
         });
     });
 });
 exports.test = () => {
-    DbDatabaseMetadata_Loader.LoadFromDb(connection).then((meta_original) => {
-        let json_data = JSON.stringify(meta_original);
-        let meta_from_json = DbDatabaseMetadata_Loader.FromJSON(json_data);
+    let loader = new DbDatabaseMetadata_Loader(connection);
+    loader.FromSchema(process.env.DB_DATABASE, new DbDatabaseMetadata)
+        .then((meta) => {
+        return loader.FromSchema(process.env.DB_DATABASE_COMMON, meta);
+    })
+        .then((meta) => {
+        let json_data = JSON.stringify(meta);
+        let meta_from_json = DbDatabaseMetadata_Loader.FromJSON(json_data, new DbDatabaseMetadata);
         console.log(JSON.stringify(meta_from_json));
         //console.log(JSON.stringify(meta))
     });

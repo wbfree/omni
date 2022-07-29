@@ -12,7 +12,7 @@ declare class DbFieldMetadata {
     Assign(obj: object): void;
 }
 declare class DbTableMetadata {
-    Schema: string;
+    SchemaName: string;
     TableName: string;
     Fields: Array<DbFieldMetadata>;
     constructor(tableName: string, schema: string);
@@ -21,19 +21,18 @@ declare class DbTableMetadata {
 declare class DbDatabaseMetadata {
     Tables: Array<DbTableMetadata>;
     constructor();
-    GetTable(tableName: string): DbTableMetadata;
+    GetTable(tableName: string, schema: string): DbTableMetadata;
 }
 declare var mysql: any;
 declare var connection: any;
 declare class DbDatabaseMetadata_Loader {
     private conn;
-    private schema;
-    constructor(connection: any, schema: string);
+    constructor(connection: any);
     private loadKeys;
     private loadFields;
     private loadTables;
-    static LoadFromDb(conn: any): Promise<DbDatabaseMetadata>;
-    static FromJSON(json_data: string): DbDatabaseMetadata;
+    static FromJSON(json_data: string, meta: DbDatabaseMetadata): DbDatabaseMetadata;
+    FromSchema(schema: string, meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata>;
 }
 declare class QueryResult {
     Err: object;
