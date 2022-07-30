@@ -27,7 +27,7 @@ class DbFieldMetadata {
 class DbTableMetadata {
     public SchemaName: string
     public TableName: string
-    public Fields: Array<DbFieldMetadata> = new Array<DbFieldMetadata>;
+    public Fields: Array<DbFieldMetadata> = new Array<DbFieldMetadata>();
 
     public constructor(tableName: string, schema: string) {
         this.TableName = tableName
@@ -41,7 +41,7 @@ class DbTableMetadata {
 }
 
 class DbDatabaseMetadata {
-    public Tables: Array<DbTableMetadata> = new Array<DbTableMetadata>;
+    public Tables: Array<DbTableMetadata> = new Array<DbTableMetadata>();
     public constructor() { }
 
     public GetTable(tableName: string, schema: string): DbTableMetadata {
@@ -53,7 +53,8 @@ var mysql = require('mysql');
 var connection = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
-    password: process.env.DB_PASS
+    password: process.env.DB_PASS,
+    port: process.env.DB_PORT
 });
 
 exports.connect = (callback: any) => {
@@ -92,7 +93,7 @@ class DbDatabaseMetadata_Loader {
     }
     private loadFields(meta: DbDatabaseMetadata, schema: string): Promise<DbDatabaseMetadata> {
         return new Promise<DbDatabaseMetadata>((resolve, reject) => {
-            let promises: Array<Promise<void>> = new Array<Promise<void>>;
+            let promises: Array<Promise<void>> = new Array<Promise<void>>();
             let schema_tables: Array<DbTableMetadata> = meta.Tables.filter((tableData: DbTableMetadata) => { return tableData.SchemaName == schema })
 
             schema_tables.forEach((tableData: DbTableMetadata) => {

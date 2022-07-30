@@ -20,7 +20,7 @@ class DbFieldMetadata {
 }
 class DbTableMetadata {
     constructor(tableName, schema) {
-        this.Fields = new Array;
+        this.Fields = new Array();
         this.TableName = tableName;
         this.SchemaName = schema;
     }
@@ -31,7 +31,7 @@ class DbTableMetadata {
 }
 class DbDatabaseMetadata {
     constructor() {
-        this.Tables = new Array;
+        this.Tables = new Array();
     }
     GetTable(tableName, schema) {
         return this.Tables.find(table => table.TableName == tableName && table.SchemaName == schema);
@@ -41,7 +41,8 @@ var mysql = require('mysql');
 var connection = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
-    password: process.env.DB_PASS
+    password: process.env.DB_PASS,
+    port: process.env.DB_PORT
 });
 exports.connect = (callback) => {
     connection.connect(callback);
@@ -74,7 +75,7 @@ class DbDatabaseMetadata_Loader {
     }
     loadFields(meta, schema) {
         return new Promise((resolve, reject) => {
-            let promises = new Array;
+            let promises = new Array();
             let schema_tables = meta.Tables.filter((tableData) => { return tableData.SchemaName == schema; });
             schema_tables.forEach((tableData) => {
                 promises.push(new Promise((resolve, reject) => {
