@@ -1,6 +1,6 @@
 import express from 'express';
 import { myDb } from './mydb';
-import { myCommon } from 'omni_common/lib/common'
+import { DbDatabaseMetadata, DbTableMetadata, DbFieldMetadata } from 'omni_common'
 
 //mysql
 //var mydb = require('./mydb');
@@ -16,14 +16,12 @@ function myMiddleware(req, res, next) {
   next()
 }
 
-myCommon.test_fnc();
-
 app.set('json spaces', 4);
 app.use(express.json());
 app.use(myMiddleware)
 
 app.get('/metadata', (req, res) => {
-  myDb.Metadata().then((meta: myDb.DbDatabaseMetadata) => {
+  myDb.Metadata().then((meta: DbDatabaseMetadata) => {
     res.json({ result: meta })
   })
 });

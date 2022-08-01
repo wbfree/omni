@@ -1,3 +1,4 @@
+import { DbDatabaseMetadata, DbTableMetadata, DbFieldMetadata } from 'omni_common'
 require('dotenv').config({ path: __dirname + '/.env' })
 
 var mysql = require('mysql');
@@ -14,54 +15,6 @@ export module myDb {
     export function connect(callback: any) {
         connection.connect(callback)
         return connection;
-    }
-
-    export class DbFieldMetadata {
-        public TableName: string;
-        public Field: string;
-        public Type: string;
-        public Null: string;
-        public Key: string;
-        public Default: string;
-
-        public Referenced_Schema: string;
-        public Referenced_Table: string;
-        public Referenced_Field: string;
-
-        public constructor(tableName: string, fields: object) {
-            this.TableName = tableName
-            this.Assign(fields)
-        };
-
-        public Assign(obj: object) {
-            Object.assign(this, obj)
-        }
-
-    }
-
-    export class DbTableMetadata {
-        public SchemaName: string
-        public TableName: string
-        public Fields: Array<DbFieldMetadata> = new Array<DbFieldMetadata>();
-
-        public constructor(tableName: string, schema: string) {
-            this.TableName = tableName
-            this.SchemaName = schema
-        };
-
-        public GetField(fieldName: string): DbFieldMetadata {
-            return this.Fields.find(field => field.Field == fieldName)
-        }
-
-    }
-
-    export class DbDatabaseMetadata {
-        public Tables: Array<DbTableMetadata> = new Array<DbTableMetadata>();
-        public constructor() { }
-
-        public GetTable(tableName: string, schema: string): DbTableMetadata {
-            return this.Tables.find(table => table.TableName == tableName && table.SchemaName == schema)
-        }
     }
 
     export class DbDatabaseMetadata_Loader {

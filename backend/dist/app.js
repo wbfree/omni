@@ -5,7 +5,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const mydb_1 = require("./mydb");
-const common_1 = require("omni_common/lib/common");
 //mysql
 //var mydb = require('./mydb');
 //express
@@ -17,7 +16,6 @@ function myMiddleware(req, res, next) {
     }
     next();
 }
-common_1.myCommon.test_fnc();
 app.set('json spaces', 4);
 app.use(express_1.default.json());
 app.use(myMiddleware);

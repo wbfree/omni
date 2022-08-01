@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.myDb = void 0;
+const omni_common_1 = require("omni_common");
 require('dotenv').config({ path: __dirname + '/.env' });
 var mysql = require('mysql');
 var connection = mysql.createConnection({
@@ -25,38 +26,6 @@ var myDb;
         return connection;
     }
     myDb.connect = connect;
-    class DbFieldMetadata {
-        constructor(tableName, fields) {
-            this.TableName = tableName;
-            this.Assign(fields);
-        }
-        ;
-        Assign(obj) {
-            Object.assign(this, obj);
-        }
-    }
-    myDb.DbFieldMetadata = DbFieldMetadata;
-    class DbTableMetadata {
-        constructor(tableName, schema) {
-            this.Fields = new Array();
-            this.TableName = tableName;
-            this.SchemaName = schema;
-        }
-        ;
-        GetField(fieldName) {
-            return this.Fields.find(field => field.Field == fieldName);
-        }
-    }
-    myDb.DbTableMetadata = DbTableMetadata;
-    class DbDatabaseMetadata {
-        constructor() {
-            this.Tables = new Array();
-        }
-        GetTable(tableName, schema) {
-            return this.Tables.find(table => table.TableName == tableName && table.SchemaName == schema);
-        }
-    }
-    myDb.DbDatabaseMetadata = DbDatabaseMetadata;
     class DbDatabaseMetadata_Loader {
         constructor(connection) {
             this.conn = connection;
@@ -94,7 +63,7 @@ var myDb;
                                 reject(err);
                             let table = meta.GetTable(tableData.TableName, schema);
                             Object.values(results).map((obj) => {
-                                table.Fields.push(new DbFieldMetadata(tableData.TableName, obj));
+                                table.Fields.push(new omni_common_1.DbFieldMetadata(tableData.TableName, obj));
                             });
                             resolve();
                         });
@@ -115,7 +84,7 @@ var myDb;
                         reject(err);
                     results.forEach((result) => {
                         for (let table in result) {
-                            meta.Tables.push(new DbTableMetadata(result[table], schema));
+                            meta.Tables.push(new omni_common_1.DbTableMetadata(result[table], schema));
                         }
                     });
                     resolve(meta);
@@ -137,7 +106,7 @@ var myDb;
     function Metadata() {
         return __awaiter(this, void 0, void 0, function* () {
             let loader = new DbDatabaseMetadata_Loader(connection);
-            let meta = yield loader.FromSchema(process.env.DB_DATABASE, new DbDatabaseMetadata);
+            let meta = yield loader.FromSchema(process.env.DB_DATABASE, new omni_common_1.DbDatabaseMetadata);
             return yield loader.FromSchema(process.env.DB_DATABASE_COMMON, meta);
         });
     }
@@ -154,7 +123,7 @@ var myDb;
                     query_result.Results = results;
                     if (err)
                         resolve(query_result);
-                    new DbDatabaseMetadata_Loader(connection).FromSchema(process.env.DB_DATABASE, new DbDatabaseMetadata).then((meta) => {
+                    new DbDatabaseMetadata_Loader(connection).FromSchema(process.env.DB_DATABASE, new omni_common_1.DbDatabaseMetadata).then((meta) => {
                         query_result.Metadata = meta.GetTable(obj, process.env.DB_DATABASE);
                         resolve(query_result);
                     });
@@ -165,13 +134,13 @@ var myDb;
     myDb.Get = Get;
     function test() {
         let loader = new DbDatabaseMetadata_Loader(connection);
-        loader.FromSchema(process.env.DB_DATABASE, new DbDatabaseMetadata)
+        loader.FromSchema(process.env.DB_DATABASE, new omni_common_1.DbDatabaseMetadata)
             .then((meta) => {
             return loader.FromSchema(process.env.DB_DATABASE_COMMON, meta);
         })
             .then((meta) => {
             let json_data = JSON.stringify(meta);
-            let meta_from_json = DbDatabaseMetadata_Loader.FromJSON(json_data, new DbDatabaseMetadata);
+            let meta_from_json = DbDatabaseMetadata_Loader.FromJSON(json_data, new omni_common_1.DbDatabaseMetadata);
             console.log(JSON.stringify(meta_from_json));
             //console.log(JSON.stringify(meta))
         });
