@@ -7,7 +7,7 @@ var myCommon;
     }
     myCommon.test_export = test_export;
     function test_fnc() {
-        console.log('testsss');
+        console.log('testsssddddd ciola');
     }
     myCommon.test_fnc = test_fnc;
 })(myCommon = exports.myCommon || (exports.myCommon = {}));

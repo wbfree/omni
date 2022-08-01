@@ -1,6 +1,6 @@
 import express from 'express';
 import { myDb } from './mydb';
-import { myCommon } from 'cazzucazzu_'
+import { myCommon } from 'omni_common/lib/common'
 
 //mysql
 //var mydb = require('./mydb');

@@ -1,10 +1,10 @@
 {
-  "name": "cazzucazzu_",
+  "name": "omni_common",
   "version": "1.0.0",
   "description": "common omni",
-  "main": "lib/index.js",
+  "main": "lib/common.js",
   "scripts": {
-     "build": "npx tsc --watch",
+    "start": "npx tsc --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

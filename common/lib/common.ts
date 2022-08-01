@@ -6,7 +6,7 @@ export module myCommon {
 
     export function test_fnc() {
 
-        console.log('testsss')
+        console.log('testsssddddd ciola')
 
     }
 
