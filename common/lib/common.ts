@@ -19,6 +19,11 @@ export class DbFieldMetadata {
         Object.assign(this, obj)
     }
 
+    public IsFK(): boolean {
+        return this.Referenced_Field != null;
+    }
+
+
 }
 
 export class DbTableMetadata {
@@ -33,6 +38,17 @@ export class DbTableMetadata {
 
     public GetField(fieldName: string): DbFieldMetadata {
         return this.Fields.find(field => field.Field == fieldName) ?? new DbFieldMetadata(this.TableName, new Object)
+    }
+
+    public GetSelectSQL(): string {
+        let sql: string = `select * from ${this.SchemaName}.${this.TableName}`
+
+        this.Fields.filter((field: DbFieldMetadata) => field.IsFK()).forEach((field: DbFieldMetadata) => {
+            sql += `inner join  ${field.Referenced_Schema}.${field.Referenced_Table} on 
+                ${this.SchemaName}.${this.TableName}.${field.Field}=${field.Referenced_Schema}.${field.Referenced_Table}.${field.Referenced_Field}`
+        })
+        return sql;
+        //        return this.Fields.map((field :DbFieldMetadata)=> field.Field ).join(",")
     }
 
 }
