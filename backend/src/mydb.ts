@@ -111,24 +111,25 @@ export module myDb {
         public Err: object
         public Results: Array<object>
         public Metadata: DbTableMetadata;
+        public SQL :string;
 
     }
 
     export async function Get(obj: string): Promise<QueryResult> {
         return new Promise((resolve, reject) => {
-            connection.query(`select * from ${process.env.DB_DATABASE}.${obj}`, function (err: object, results: Array<object>, fields: object) {
-                let query_result = new QueryResult;
-                query_result.Err = err
-                query_result.Results = results
-
-                if (err)
+            new DbDatabaseMetadata_Loader(connection).FromSchema(process.env.DB_DATABASE, new DbDatabaseMetadata).then((meta :DbDatabaseMetadata )=> {
+                let table :DbTableMetadata = meta.GetTable(obj, process.env.DB_DATABASE)
+                
+                connection.query(table.GetSelectSQL(), function (err: object, results: Array<object>, fields: object) {
+                    let query_result = new QueryResult;
+                    query_result.Metadata = table
+                    query_result.Err = err
+                    query_result.Results = results
+                    query_result.SQL = table.GetSelectSQL()
+    
                     resolve(query_result)
-
-                new DbDatabaseMetadata_Loader(connection).FromSchema(process.env.DB_DATABASE, new DbDatabaseMetadata).then((meta) => {
-                    query_result.Metadata = meta.GetTable(obj, process.env.DB_DATABASE)
-                    resolve(query_result)
-                })
-            })
+                    })
+            }) 
         })
     }
 

@@ -117,14 +117,14 @@ var myDb;
     function Get(obj) {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
-                connection.query(`select * from ${process.env.DB_DATABASE}.${obj}`, function (err, results, fields) {
-                    let query_result = new QueryResult;
-                    query_result.Err = err;
-                    query_result.Results = results;
-                    if (err)
-                        resolve(query_result);
-                    new DbDatabaseMetadata_Loader(connection).FromSchema(process.env.DB_DATABASE, new omni_common_1.DbDatabaseMetadata).then((meta) => {
-                        query_result.Metadata = meta.GetTable(obj, process.env.DB_DATABASE);
+                new DbDatabaseMetadata_Loader(connection).FromSchema(process.env.DB_DATABASE, new omni_common_1.DbDatabaseMetadata).then((meta) => {
+                    let table = meta.GetTable(obj, process.env.DB_DATABASE);
+                    connection.query(table.GetSelectSQL(), function (err, results, fields) {
+                        let query_result = new QueryResult;
+                        query_result.Metadata = table;
+                        query_result.Err = err;
+                        query_result.Results = results;
+                        query_result.SQL = table.GetSelectSQL();
                         resolve(query_result);
                     });
                 });

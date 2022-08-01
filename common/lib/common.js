@@ -29,8 +29,7 @@ class DbTableMetadata {
     GetSelectSQL() {
         let sql = `select * from ${this.SchemaName}.${this.TableName}`;
         this.Fields.filter((field) => field.IsFK()).forEach((field) => {
-            sql += `inner join  ${field.Referenced_Schema}.${field.Referenced_Table} on 
-                ${this.SchemaName}.${this.TableName}.${field.Field}=${field.Referenced_Schema}.${field.Referenced_Table}.${field.Referenced_Field}`;
+            sql += ` left join  ${field.Referenced_Schema}.${field.Referenced_Table} on ${this.SchemaName}.${this.TableName}.${field.Field}=${field.Referenced_Schema}.${field.Referenced_Table}.${field.Referenced_Field}`;
         });
         return sql;
         //        return this.Fields.map((field :DbFieldMetadata)=> field.Field ).join(",")

@@ -15,6 +15,7 @@ export declare module myDb {
         Err: object;
         Results: Array<object>;
         Metadata: DbTableMetadata;
+        SQL: string;
     }
     function Get(obj: string): Promise<QueryResult>;
     function test(): void;
