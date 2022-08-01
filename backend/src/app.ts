@@ -1,5 +1,6 @@
 import express from 'express';
 import { myDb } from './mydb';
+import { myCommon } from 'cazzucazzu_'
 
 //mysql
 //var mydb = require('./mydb');
@@ -14,6 +15,8 @@ function myMiddleware(req, res, next) {
   }
   next()
 }
+
+myCommon.test_fnc();
 
 app.set('json spaces', 4);
 app.use(express.json());
