@@ -40,6 +40,7 @@ export module myDb {
                         let schemaName: string = keys['SchemaName'];
                         let tableName: string = keys['TableName'];
                         let fieldName: string = keys['Field'];
+
                         meta.GetTable(tableName, schemaName).GetField(fieldName).Assign(keys)
                     })
                     resolve(meta)
@@ -54,12 +55,13 @@ export module myDb {
                 schema_tables.forEach((tableData: DbTableMetadata) => {
                     promises.push(new Promise<void>((resolve, reject) => {
                         let fields_query = `show fields from ${schema}.${tableData.TableName}`
+
                         this.conn.query(fields_query, function (err: object, results: Array<object>, fields: object) {
                             if (err) reject(err)
 
                             let table: DbTableMetadata = meta.GetTable(tableData.TableName, schema)
                             Object.values(results).map((obj) => {
-                                table.Fields.push(new DbFieldMetadata(tableData.TableName, obj));
+                                table.Fields.push(new DbFieldMetadata(tableData.TableName, schema, obj));
                             })
                             resolve()
                         })
@@ -69,7 +71,7 @@ export module myDb {
                 Promise.all(promises).then(() => {
                     resolve(meta)
                 }).catch((err) => {
-                    reject(meta)
+                    reject(err)
                 })
             })
         }
@@ -111,25 +113,23 @@ export module myDb {
         public Err: object
         public Results: Array<object>
         public Metadata: DbTableMetadata;
-        public SQL :string;
+        public SQL: string;
 
     }
 
     export async function Get(obj: string): Promise<QueryResult> {
         return new Promise((resolve, reject) => {
-            new DbDatabaseMetadata_Loader(connection).FromSchema(process.env.DB_DATABASE, new DbDatabaseMetadata).then((meta :DbDatabaseMetadata )=> {
-                let table :DbTableMetadata = meta.GetTable(obj, process.env.DB_DATABASE)
-                
-                connection.query(table.GetSelectSQL(), function (err: object, results: Array<object>, fields: object) {
+            Metadata().then((meta: DbDatabaseMetadata) => {
+                connection.query(meta.GetSelectSQL(obj, process.env.DB_DATABASE), function (err: object, results: Array<object>, fields: object) {
                     let query_result = new QueryResult;
-                    query_result.Metadata = table
+                    query_result.Metadata = meta.GetTable(obj, process.env.DB_DATABASE)
                     query_result.Err = err
                     query_result.Results = results
-                    query_result.SQL = table.GetSelectSQL()
-    
+                    query_result.SQL = meta.GetSelectSQL(obj, process.env.DB_DATABASE)
+
                     resolve(query_result)
-                    })
-            }) 
+                })
+            })
         })
     }
 

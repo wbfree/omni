@@ -63,7 +63,7 @@ var myDb;
                                 reject(err);
                             let table = meta.GetTable(tableData.TableName, schema);
                             Object.values(results).map((obj) => {
-                                table.Fields.push(new omni_common_1.DbFieldMetadata(tableData.TableName, obj));
+                                table.Fields.push(new omni_common_1.DbFieldMetadata(tableData.TableName, schema, obj));
                             });
                             resolve();
                         });
@@ -72,7 +72,7 @@ var myDb;
                 Promise.all(promises).then(() => {
                     resolve(meta);
                 }).catch((err) => {
-                    reject(meta);
+                    reject(err);
                 });
             });
         }
@@ -117,14 +117,13 @@ var myDb;
     function Get(obj) {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
-                new DbDatabaseMetadata_Loader(connection).FromSchema(process.env.DB_DATABASE, new omni_common_1.DbDatabaseMetadata).then((meta) => {
-                    let table = meta.GetTable(obj, process.env.DB_DATABASE);
-                    connection.query(table.GetSelectSQL(), function (err, results, fields) {
+                Metadata().then((meta) => {
+                    connection.query(meta.GetSelectSQL(obj, process.env.DB_DATABASE), function (err, results, fields) {
                         let query_result = new QueryResult;
-                        query_result.Metadata = table;
+                        query_result.Metadata = meta.GetTable(obj, process.env.DB_DATABASE);
                         query_result.Err = err;
                         query_result.Results = results;
-                        query_result.SQL = table.GetSelectSQL();
+                        query_result.SQL = meta.GetSelectSQL(obj, process.env.DB_DATABASE);
                         resolve(query_result);
                     });
                 });
