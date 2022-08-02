@@ -20,7 +20,7 @@ app.set('json spaces', 4);
 app.use(express_1.default.json());
 app.use(myMiddleware);
 app.get('/metadata', (req, res) => {
-    mydb_1.myDb.Metadata().then((meta) => {
+    mydb_1.myDb.GetMetadata().then((meta) => {
         res.json({ result: meta });
     });
 });

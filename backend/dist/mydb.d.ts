@@ -10,7 +10,7 @@ export declare module myDb {
         static FromJSON(json_data: string, meta: DbDatabaseMetadata): DbDatabaseMetadata;
         FromSchema(schema: string, meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata>;
     }
-    function Metadata(): Promise<DbDatabaseMetadata>;
+    function GetMetadata(): Promise<DbDatabaseMetadata>;
     class QueryResult {
         Err: object;
         Results: Array<object>;

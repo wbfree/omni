@@ -21,7 +21,7 @@ app.use(express.json());
 app.use(myMiddleware)
 
 app.get('/metadata', (req, res) => {
-  myDb.Metadata().then((meta: DbDatabaseMetadata) => {
+  myDb.GetMetadata().then((meta: DbDatabaseMetadata) => {
     res.json({ result: meta })
   })
 });

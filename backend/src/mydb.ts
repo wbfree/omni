@@ -103,7 +103,7 @@ export module myDb {
         }
     }
 
-    export async function Metadata(): Promise<DbDatabaseMetadata> {
+    export async function GetMetadata(): Promise<DbDatabaseMetadata> {
         let loader = new DbDatabaseMetadata_Loader(connection);
         let meta = await loader.FromSchema(process.env.DB_DATABASE, new DbDatabaseMetadata)
         return await loader.FromSchema(process.env.DB_DATABASE_COMMON, meta)
@@ -119,7 +119,7 @@ export module myDb {
 
     export async function Get(obj: string): Promise<QueryResult> {
         return new Promise((resolve, reject) => {
-            Metadata().then((meta: DbDatabaseMetadata) => {
+            GetMetadata().then((meta: DbDatabaseMetadata) => {
                 connection.query(meta.GetSelectSQL(obj, process.env.DB_DATABASE), function (err: object, results: Array<object>, fields: object) {
                     let query_result = new QueryResult;
                     query_result.Metadata = meta.GetTable(obj, process.env.DB_DATABASE)
@@ -134,12 +134,7 @@ export module myDb {
     }
 
     export function test() {
-        let loader = new DbDatabaseMetadata_Loader(connection);
-
-        loader.FromSchema(process.env.DB_DATABASE, new DbDatabaseMetadata)
-            .then((meta: DbDatabaseMetadata) => {
-                return loader.FromSchema(process.env.DB_DATABASE_COMMON, meta)
-            })
+        GetMetadata()
             .then((meta: DbDatabaseMetadata) => {
                 let json_data: string = JSON.stringify(meta);
                 let meta_from_json = DbDatabaseMetadata_Loader.FromJSON(json_data, new DbDatabaseMetadata)

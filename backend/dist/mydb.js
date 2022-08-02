@@ -103,21 +103,21 @@ var myDb;
         }
     }
     myDb.DbDatabaseMetadata_Loader = DbDatabaseMetadata_Loader;
-    function Metadata() {
+    function GetMetadata() {
         return __awaiter(this, void 0, void 0, function* () {
             let loader = new DbDatabaseMetadata_Loader(connection);
             let meta = yield loader.FromSchema(process.env.DB_DATABASE, new omni_common_1.DbDatabaseMetadata);
             return yield loader.FromSchema(process.env.DB_DATABASE_COMMON, meta);
         });
     }
-    myDb.Metadata = Metadata;
+    myDb.GetMetadata = GetMetadata;
     class QueryResult {
     }
     myDb.QueryResult = QueryResult;
     function Get(obj) {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
-                Metadata().then((meta) => {
+                GetMetadata().then((meta) => {
                     connection.query(meta.GetSelectSQL(obj, process.env.DB_DATABASE), function (err, results, fields) {
                         let query_result = new QueryResult;
                         query_result.Metadata = meta.GetTable(obj, process.env.DB_DATABASE);
@@ -132,11 +132,7 @@ var myDb;
     }
     myDb.Get = Get;
     function test() {
-        let loader = new DbDatabaseMetadata_Loader(connection);
-        loader.FromSchema(process.env.DB_DATABASE, new omni_common_1.DbDatabaseMetadata)
-            .then((meta) => {
-            return loader.FromSchema(process.env.DB_DATABASE_COMMON, meta);
-        })
+        GetMetadata()
             .then((meta) => {
             let json_data = JSON.stringify(meta);
             let meta_from_json = DbDatabaseMetadata_Loader.FromJSON(json_data, new omni_common_1.DbDatabaseMetadata);
