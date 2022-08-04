@@ -5,7 +5,8 @@
   "main": "lib/common.js",
   "scripts": {
     "start": "npx tsc --watch",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npx ts-node lib/test.ts",
+    "test_": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
