@@ -21,21 +21,27 @@ class OmniStringField extends OmniField {
 
 
 let modello = {
-    Classes: {
-        id: OmniStringField,
-        description: OmniStringField,
-        lookup: 'LookupClass'
+    Types_: [
+        { field: 'id', type: 'int', description: 'ID' },
+        { field: 'description', type: 'string', description: 'Descrizione' },
+        { field: 'idlocalita', type: 'lookup', lookup: 'idlocalita_lookup', description: 'Localita di nascita' }
+    ],
+    Types: {
+        id: 'int',
+        description: 'string',
+        idlocalita: 'lookup'
     },
     Results: [
         {
             id: 1,
             description: 'desc1',
-            lookup: { key: 1, value: 'lookup1' }
+            idlocalita: 1,
+            idlocalita_lookup: 'loc1',
         },
         {
             id: 2,
             description: 'desc2',
-            lookup: { key: 2, value: 'lookup2' }
+            idlocalita_lookup: 'loc2',
         }
     ]
 
