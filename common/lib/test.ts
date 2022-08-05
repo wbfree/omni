@@ -1,20 +1,38 @@
 //import { DbDatabaseMetadata, DbTableMetadata, DbFieldMetadata } from './common.js'
 
 
-abstract class OmniField {
+class TType_ {
+    public field: string | undefined;
+    public type: string | undefined;
+    public description: string | undefined;
+    public lookup: string | undefined;
+}
 
-    public abstract name(): string;
+
+abstract class OmniField {
+    public abstract value(): string;
+    public type: TType_;
+
+    public constructor(ty: TType_) {
+        this.type = ty
+    }
 }
 
 class OmniIntegerField extends OmniField {
 
-    public name(): string {
+    public value(): string {
         return 'integer'
     }
 }
 class OmniStringField extends OmniField {
 
-    public name(): string {
+    public value(): string {
+        return 'string'
+    }
+}
+class OmniLookupField extends OmniField {
+
+    public value(): string {
         return 'string'
     }
 }
@@ -26,11 +44,6 @@ let modello = {
         { field: 'description', type: 'string', description: 'Descrizione' },
         { field: 'idlocalita', type: 'lookup', lookup: 'idlocalita_lookup', description: 'Localita di nascita' }
     ],
-    Types: {
-        id: 'int',
-        description: 'string',
-        idlocalita: 'lookup'
-    },
     Results: [
         {
             id: 1,
@@ -49,44 +62,46 @@ let modello = {
 
 
 let arr = new Array<OmniField>()
-arr.push(new OmniIntegerField())
-arr.push(new OmniStringField())
+//arr.push(new OmniIntegerField(undefined))
+//arr.push(new OmniStringField(undefined))
 
 //arr.forEach((element: BaseTypeClass) => console.log(element.name()));
 
-class OmniRecord {
-    public Fields: Array<OmniField> = new Array<OmniField>
-
+const FieldFactory = {
+    'int': OmniIntegerField,
+    'string': OmniStringField,
+    'lookup': OmniLookupField
 }
 
 class OmniDataSet {
-    public Records: Array<OmniRecord> = new Array<OmniRecord>;
+    public Record: Array<OmniField> = new Array<OmniField>;
+    public Results: Array<Object>;
 
     constructor(obj: any) {
-        const { Classes, Results }: { Classes: Object, Results: Array<Object> } = obj;
-        console.log(JSON.stringify(Classes))
+        const { Types, Results, }: { Types: Array<TType_>, Results: Array<Object> } = obj;
 
-        Object.keys(Classes).forEach((key: string) => {
-            console.log(key)
+        Types.forEach((_type: TType_) => {
+            this.Record.push(new FieldFactory[str](Types))
+        })
+        for (const { Types } of obj) {
+            this.Record.push(new FieldFactory['int'](Types))
+        }
+        this.Results = Results
+
+        this.Record.forEach((field: OmniField) => {
+            console.log(field.value)
         })
 
-
         //Object.create('OmniIntegerField')
-
-        //results.forEach()
-
         //Object.keys(obj.Classes).forEach(key: string) => console.log(key))
 
         //let classes: Array<string> = (Array<string>)obj['Classes'];
-
         // (Array<string>)obj['Classes'].forEach
-
         //Object.assign(this, obj)
     }
 
-    public Get(): Array<OmniField> {
+    public GetR(): Array<OmniField> {
         return new Array<OmniField>()
-
     }
 
 }
