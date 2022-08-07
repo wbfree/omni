@@ -78,8 +78,8 @@ export class DbTableMetadata {
     }
 
     public GetSelectSQL(meta: DbDatabaseMetadata): string {
-        let sql_fields: Array<string> = new Array<string>;
-        let sql_join: Array<string> = new Array<string>;
+        let sql_fields: Array<string> = new Array<string>();
+        let sql_join: Array<string> = new Array<string>();
         sql_fields.push(`${this.GetSQLRef()}.*`)
 
         this.Fields.filter((field: DbFieldMetadata) => field.IsFK()).forEach((keyfield: DbFieldMetadata) => {

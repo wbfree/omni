@@ -1,48 +1,70 @@
 //import { DbDatabaseMetadata, DbTableMetadata, DbFieldMetadata } from './common.js'
 
-
 class TType_ {
-    public field: string | undefined;
-    public type: string | undefined;
+    public field: string = '';
+    public field_lookup: string | undefined;
+    public type: string = '';
     public description: string | undefined;
-    public lookup: string | undefined;
-}
-
-
-abstract class OmniField {
-    public abstract value(): string;
-    public type: TType_;
 
     public constructor(ty: TType_) {
-        this.type = ty
+        Object.assign(this, ty)
+    }
+
+}
+abstract class OmniField extends TType_ {
+    public Value: any = 0
+
+    public constructor(ty: TType_) {
+        super(ty)
+    }
+
+    public static Create(json: TType_): OmniField {
+        switch (json.type) {
+            case 'int': return new OmniIntegerField(json)
+            case 'string': return new OmniStringField(json)
+            case 'lookup': return new OmniLookupField(json)
+        }
+        return new OmniUnknownField(json)
+    }
+    public Assign(obj: Object): void {
+        type ObjectKey = keyof typeof obj;
+        this.Value = obj[this.field as ObjectKey]
+    }
+    public AsString(): string {
+        return this.Value
     }
 }
 
 class OmniIntegerField extends OmniField {
-
-    public value(): string {
-        return 'integer'
-    }
 }
 class OmniStringField extends OmniField {
-
-    public value(): string {
-        return 'string'
-    }
 }
 class OmniLookupField extends OmniField {
-
-    public value(): string {
-        return 'string'
+    public Key: any = 0
+    public Assign(obj: Object): void {
+        type ObjectKey = keyof typeof obj;
+        this.Key = obj[this.field as ObjectKey]
+        this.Value = obj[this.field_lookup as ObjectKey]
+    }
+    public AsString(): string {
+        return `${this.Key} ${this.Value}`
     }
 }
+class OmniUnknownField extends OmniField {
+    public AsString(): string {
+        return 'UNKNOWN'
+    }
+}
+
+
+
 
 
 let modello = {
-    Types_: [
+    Types: [
         { field: 'id', type: 'int', description: 'ID' },
         { field: 'description', type: 'string', description: 'Descrizione' },
-        { field: 'idlocalita', type: 'lookup', lookup: 'idlocalita_lookup', description: 'Localita di nascita' }
+        { field: 'idlocalita', type: 'lookup', field_lookup: 'idlocalita_lookup', description: 'Localita di nascita' }
     ],
     Results: [
         {
@@ -54,6 +76,7 @@ let modello = {
         {
             id: 2,
             description: 'desc2',
+            idlocalita: 2,
             idlocalita_lookup: 'loc2',
         }
     ]
@@ -67,30 +90,19 @@ let arr = new Array<OmniField>()
 
 //arr.forEach((element: BaseTypeClass) => console.log(element.name()));
 
-const FieldFactory = {
-    'int': OmniIntegerField,
-    'string': OmniStringField,
-    'lookup': OmniLookupField
-}
-
 class OmniDataSet {
-    public Record: Array<OmniField> = new Array<OmniField>;
-    public Results: Array<Object>;
+    private Record: Array<OmniField> = new Array<OmniField>();
+    private Results: Array<Object>;
+    private CurrentRecord: number = 0;
 
-    constructor(obj: any) {
-        const { Types, Results, }: { Types: Array<TType_>, Results: Array<Object> } = obj;
+    constructor(json: any) {
+        const { Types, Results, }: { Types: Array<TType_>, Results: Array<Object> } = json;
 
-        Types.forEach((_type: TType_) => {
-            this.Record.push(new FieldFactory[str](Types))
+        Types.forEach((json: TType_) => {
+            this.Record.push(OmniField.Create(json))
         })
-        for (const { Types } of obj) {
-            this.Record.push(new FieldFactory['int'](Types))
-        }
+
         this.Results = Results
-
-        this.Record.forEach((field: OmniField) => {
-            console.log(field.value)
-        })
 
         //Object.create('OmniIntegerField')
         //Object.keys(obj.Classes).forEach(key: string) => console.log(key))
@@ -100,11 +112,24 @@ class OmniDataSet {
         //Object.assign(this, obj)
     }
 
-    public GetR(): Array<OmniField> {
-        return new Array<OmniField>()
+    public Get(): Array<OmniField> {
+        this.Record.forEach((field: OmniField) => field.Assign(this.Results[this.CurrentRecord]))
+        return this.Record
+    }
+    public First(): void {
+        this.CurrentRecord = 0
+    }
+    public Next(): boolean {
+        return ++this.CurrentRecord < this.Results.length
     }
 
 }
 
-let model = new OmniDataSet(modello)
-console.log(model)
+let dataSet = new OmniDataSet(modello)
+
+do {
+    dataSet.Get().forEach((field: OmniField) => console.log(field.AsString()))
+}
+while (dataSet.Next())
+
+//console.log(model)

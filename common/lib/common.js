@@ -57,8 +57,8 @@ class DbTableMetadata {
         return `${this.SchemaName}.${this.TableName}`;
     }
     GetSelectSQL(meta) {
-        let sql_fields = new Array;
-        let sql_join = new Array;
+        let sql_fields = new Array();
+        let sql_join = new Array();
         sql_fields.push(`${this.GetSQLRef()}.*`);
         this.Fields.filter((field) => field.IsFK()).forEach((keyfield) => {
             let fkTable = keyfield.GetFkTable(meta);
