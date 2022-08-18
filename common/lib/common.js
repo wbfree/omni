@@ -1,11 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DbDatabaseMetadata = exports.DbTableMetadata = exports.DbFieldMetadata = void 0;
+exports.QueryResult = exports.DbDatabaseMetadata = exports.DbTableMetadata = exports.DbFieldMetadata = void 0;
 class DbFieldMetadata {
     constructor(tableName, schemaName, fields) {
         this.SchemaName = schemaName;
         this.TableName = tableName;
-        this.Assign(fields);
+        Object.assign(this, fields);
     }
     ;
     Assign(obj) {
@@ -56,17 +56,6 @@ class DbTableMetadata {
     GetSQLRef() {
         return `${this.SchemaName}.${this.TableName}`;
     }
-    GetSelectSQL(meta) {
-        let sql_fields = new Array();
-        let sql_join = new Array();
-        sql_fields.push(`${this.GetSQLRef()}.*`);
-        this.Fields.filter((field) => field.IsFK()).forEach((keyfield) => {
-            let fkTable = keyfield.GetFkTable(meta);
-            sql_fields.push(`${fkTable.GetLookupField().GetSQLRef()} as ${keyfield.Field}_lookup`);
-            sql_join.push(`left join ${fkTable.GetSQLRef()} on ${keyfield.GetSQLRef()} = ${keyfield.GetSQLRefKey()}`);
-        });
-        return `Select ${sql_fields.join(',')} from ${this.GetSQLRef()} ${sql_join.join(' ')}`;
-    }
     static EmptyTable() {
         return new DbTableMetadata('unknown table', 'unknown schema');
     }
@@ -80,8 +69,12 @@ class DbDatabaseMetadata {
         var _a;
         return (_a = this.Tables.find(table => table.TableName == tableName && table.SchemaName == schema)) !== null && _a !== void 0 ? _a : DbTableMetadata.EmptyTable();
     }
-    GetSelectSQL(tableName, schema) {
-        return this.GetTable(tableName, schema).GetSelectSQL(this);
-    }
 }
 exports.DbDatabaseMetadata = DbDatabaseMetadata;
+class QueryResult {
+    constructor(metadata, results) {
+        this.Metadata = metadata;
+        this.Results = results;
+    }
+}
+exports.QueryResult = QueryResult;

@@ -1,4 +1,4 @@
-import { DbDatabaseMetadata, DbTableMetadata, DbFieldMetadata } from 'omni_common'
+import { DbDatabaseMetadata, DbTableMetadata, DbFieldMetadata, QueryResult } from 'omni_common'
 require('dotenv').config({ path: __dirname + '/.env' })
 
 var mysql = require('mysql');
@@ -109,23 +109,27 @@ export module myDb {
         return await loader.FromSchema(process.env.DB_DATABASE_COMMON, meta)
     }
 
-    export class QueryResult {
-        public Err: object
-        public Results: Array<object>
-        public Metadata: DbTableMetadata;
-        public SQL: string;
-
-    }
-
     export async function Get(obj: string): Promise<QueryResult> {
         return new Promise((resolve, reject) => {
             GetMetadata().then((meta: DbDatabaseMetadata) => {
-                connection.query(meta.GetSelectSQL(obj, process.env.DB_DATABASE), function (err: object, results: Array<object>, fields: object) {
-                    let query_result = new QueryResult;
-                    query_result.Metadata = meta.GetTable(obj, process.env.DB_DATABASE)
+                let table :DbTableMetadata = meta.GetTable(obj, process.env.DB_DATABASE)
+
+                let sql_fields: Array<string> = new Array<string>();
+                let sql_join: Array<string> = new Array<string>();
+                sql_fields.push(`${table.GetSQLRef()}.*`)
+        
+                table.Fields.filter((field: DbFieldMetadata) => field.IsFK()).forEach((keyfield: DbFieldMetadata) => {
+                    let fkTable: DbTableMetadata = keyfield.GetFkTable(meta)
+        
+                    sql_fields.push(`${fkTable.GetLookupField().GetSQLRef()} as ${keyfield.Field}_lookup`)
+                    sql_join.push(`left join ${fkTable.GetSQLRef()} on ${keyfield.GetSQLRef()} = ${keyfield.GetSQLRefKey()}`)
+                })
+                let sql :string = `Select ${sql_fields.join(',')} from ${table.GetSQLRef()} ${sql_join.join(' ')}`
+
+                connection.query(sql, function (err: object, results: Array<object>, fields: object) {
+                    let query_result = new QueryResult(meta.GetTable(obj, process.env.DB_DATABASE), results)
                     query_result.Err = err
-                    query_result.Results = results
-                    query_result.SQL = meta.GetSelectSQL(obj, process.env.DB_DATABASE)
+                    query_result.SQL = sql
 
                     resolve(query_result)
                 })

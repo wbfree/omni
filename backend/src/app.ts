@@ -1,6 +1,6 @@
 import express from 'express';
 import { myDb } from './mydb';
-import { DbDatabaseMetadata, DbTableMetadata, DbFieldMetadata } from 'omni_common'
+import { DbDatabaseMetadata, DbTableMetadata, DbFieldMetadata, QueryResult } from 'omni_common'
 
 //mysql
 //var mydb = require('./mydb');
@@ -31,7 +31,7 @@ app.get('/favicon.ico', (req, res) => {
 });
 
 app.get('/:obj', (req, res) => {
-  myDb.Get(req.params.obj).then((results: myDb.QueryResult) => {
+  myDb.Get(req.params.obj).then((results: QueryResult) => {
     res.json(results);
   })
 

@@ -1,4 +1,4 @@
-import { DbDatabaseMetadata, DbTableMetadata } from 'omni_common';
+import { DbDatabaseMetadata, QueryResult } from 'omni_common';
 export declare module myDb {
     function connect(callback: any): any;
     class DbDatabaseMetadata_Loader {
@@ -11,12 +11,6 @@ export declare module myDb {
         FromSchema(schema: string, meta: DbDatabaseMetadata): Promise<DbDatabaseMetadata>;
     }
     function GetMetadata(): Promise<DbDatabaseMetadata>;
-    class QueryResult {
-        Err: object;
-        Results: Array<object>;
-        Metadata: DbTableMetadata;
-        SQL: string;
-    }
     function Get(obj: string): Promise<QueryResult>;
     function test(): void;
 }

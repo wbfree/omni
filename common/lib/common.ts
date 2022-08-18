@@ -14,7 +14,7 @@ export class DbFieldMetadata {
     public constructor(tableName: string, schemaName: string, fields: object) {
         this.SchemaName = schemaName
         this.TableName = tableName
-        this.Assign(fields)
+        Object.assign(this, fields)
     };
 
     public Assign(obj: object) {
@@ -77,20 +77,6 @@ export class DbTableMetadata {
         return `${this.SchemaName}.${this.TableName}`
     }
 
-    public GetSelectSQL(meta: DbDatabaseMetadata): string {
-        let sql_fields: Array<string> = new Array<string>();
-        let sql_join: Array<string> = new Array<string>();
-        sql_fields.push(`${this.GetSQLRef()}.*`)
-
-        this.Fields.filter((field: DbFieldMetadata) => field.IsFK()).forEach((keyfield: DbFieldMetadata) => {
-            let fkTable: DbTableMetadata = keyfield.GetFkTable(meta)
-
-            sql_fields.push(`${fkTable.GetLookupField().GetSQLRef()} as ${keyfield.Field}_lookup`)
-            sql_join.push(`left join ${fkTable.GetSQLRef()} on ${keyfield.GetSQLRef()} = ${keyfield.GetSQLRefKey()}`)
-        })
-        return `Select ${sql_fields.join(',')} from ${this.GetSQLRef()} ${sql_join.join(' ')}`
-    }
-
     public static EmptyTable(): DbTableMetadata {
         return new DbTableMetadata('unknown table', 'unknown schema')
     }
@@ -105,9 +91,20 @@ export class DbDatabaseMetadata {
         return this.Tables.find(table => table.TableName == tableName && table.SchemaName == schema) ?? DbTableMetadata.EmptyTable()
     }
 
-    public GetSelectSQL(tableName: string, schema: string): string {
-        return this.GetTable(tableName, schema).GetSelectSQL(this)
+}
+
+export class QueryResult {
+    public Err: object | undefined
+    public Results: Array<object>;
+    public Metadata: DbTableMetadata;
+    public SQL: string | undefined;
+
+    public constructor(metadata :DbTableMetadata, results :Array<object>) {
+        this.Metadata=metadata
+        this.Results=results
     }
 
 }
+
+
 

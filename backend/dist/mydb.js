@@ -111,19 +111,24 @@ var myDb;
         });
     }
     myDb.GetMetadata = GetMetadata;
-    class QueryResult {
-    }
-    myDb.QueryResult = QueryResult;
     function Get(obj) {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
                 GetMetadata().then((meta) => {
-                    connection.query(meta.GetSelectSQL(obj, process.env.DB_DATABASE), function (err, results, fields) {
-                        let query_result = new QueryResult;
-                        query_result.Metadata = meta.GetTable(obj, process.env.DB_DATABASE);
+                    let table = meta.GetTable(obj, process.env.DB_DATABASE);
+                    let sql_fields = new Array();
+                    let sql_join = new Array();
+                    sql_fields.push(`${table.GetSQLRef()}.*`);
+                    table.Fields.filter((field) => field.IsFK()).forEach((keyfield) => {
+                        let fkTable = keyfield.GetFkTable(meta);
+                        sql_fields.push(`${fkTable.GetLookupField().GetSQLRef()} as ${keyfield.Field}_lookup`);
+                        sql_join.push(`left join ${fkTable.GetSQLRef()} on ${keyfield.GetSQLRef()} = ${keyfield.GetSQLRefKey()}`);
+                    });
+                    let sql = `Select ${sql_fields.join(',')} from ${table.GetSQLRef()} ${sql_join.join(' ')}`;
+                    connection.query(sql, function (err, results, fields) {
+                        let query_result = new omni_common_1.QueryResult(meta.GetTable(obj, process.env.DB_DATABASE), results);
                         query_result.Err = err;
-                        query_result.Results = results;
-                        query_result.SQL = meta.GetSelectSQL(obj, process.env.DB_DATABASE);
+                        query_result.SQL = sql;
                         resolve(query_result);
                     });
                 });
