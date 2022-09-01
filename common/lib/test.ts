@@ -1,5 +1,4 @@
-import { isConstructorDeclaration } from 'typescript'
-import { DbDatabaseMetadata, DbTableMetadata, DbFieldMetadata, QueryResult } from './common.js'
+import { DbFieldMetadata, QueryResult } from './common.js'
 
 abstract class OmniField extends DbFieldMetadata {
     public Value: any = 0
@@ -10,13 +9,13 @@ abstract class OmniField extends DbFieldMetadata {
 
     public static Create(json: any): OmniField {
         if (json.Referenced_Field != null)
-            return new OmniLookupField(json) 
+            return new OmniLookupField(json)
 
-        if (json.Type?.startsWith('int') || json.Type?.startsWith('bigint')) 
+        if (json.Type?.startsWith('int') || json.Type?.startsWith('bigint'))
             return new OmniIntegerField(json)
         if (json.Type?.startsWith('text'))
             return new OmniStringField(json)
-        
+
         return new OmniUnknownField(json)
     }
     public Assign(obj: Object): void {
@@ -37,7 +36,7 @@ class OmniLookupField extends OmniField {
     public Assign(obj: Object): void {
         type ObjectKey = keyof typeof obj;
         this.Key = obj[this.Field as ObjectKey]
-        this.Value = obj[this.Field+'_lookup' as ObjectKey]
+        this.Value = obj[this.Field + '_lookup' as ObjectKey]
     }
     public AsString(): string {
         return `${this.Key} ${this.Value}`
@@ -221,8 +220,8 @@ class OmniDataSet {
     private CurrentRecord: number = 0;
 
     constructor(json: any) {
-        const queryResults :QueryResult = json
-        
+        const queryResults: QueryResult = json
+
         queryResults.Metadata.Fields.forEach((json: Object) => {
             this.Record.push(OmniField.Create(json))
         })
@@ -253,9 +252,9 @@ class OmniDataSet {
 let dataSet = new OmniDataSet(modello)
 
 do {
-//    dataSet.GetRecord()
+    //    dataSet.GetRecord()
 
-    dataSet.GetRecord().forEach((field: OmniField) => console.log(field.Field+": " + field.AsString()))
+    dataSet.GetRecord().forEach((field: OmniField) => console.log(field.Field + ": " + field.AsString()))
 }
 while (dataSet.NextRecord())
 

@@ -1,6 +1,6 @@
 import express from 'express';
-import { myDb } from './mydb';
-import { DbDatabaseMetadata, DbTableMetadata, DbFieldMetadata, QueryResult } from 'omni_common'
+import { connection, GetMetadata, Get, test } from './mydb';
+import { DbDatabaseMetadata, QueryResult } from 'omni_common'
 
 //mysql
 //var mydb = require('./mydb');
@@ -21,7 +21,7 @@ app.use(express.json());
 app.use(myMiddleware)
 
 app.get('/metadata', (req, res) => {
-  myDb.GetMetadata().then((meta: DbDatabaseMetadata) => {
+  GetMetadata().then((meta: DbDatabaseMetadata) => {
     res.json({ result: meta })
   })
 });
@@ -31,7 +31,7 @@ app.get('/favicon.ico', (req, res) => {
 });
 
 app.get('/:obj', (req, res) => {
-  myDb.Get(req.params.obj).then((results: QueryResult) => {
+  Get(req.params.obj).then((results: QueryResult) => {
     res.json(results);
   })
 
@@ -40,12 +40,12 @@ app.get('/:obj', (req, res) => {
 
 //init
 try {
-  var con = myDb.connect(function (err: string) {
+  connection.connect((err: string) => {
     if (err) throw new Error(err)
 
     console.log("DB Connected!");
     app.listen(port, () => {
-      myDb.test()
+      test()
       return console.log(`Express is listening at http://localhost:${port}`);
     });
   });
