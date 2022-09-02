@@ -1,54 +1,5 @@
-import { DbFieldMetadata, QueryResult } from './common.js'
-
-abstract class OmniField extends DbFieldMetadata {
-    public Value: any = 0
-
-    public constructor(json: DbFieldMetadata) {
-        super(json.TableName, json.SchemaName, json)
-    }
-
-    public static Create(json: any): OmniField {
-        if (json.Referenced_Field != null)
-            return new OmniLookupField(json)
-
-        if (json.Type?.startsWith('int') || json.Type?.startsWith('bigint'))
-            return new OmniIntegerField(json)
-        if (json.Type?.startsWith('text'))
-            return new OmniStringField(json)
-
-        return new OmniUnknownField(json)
-    }
-    public Assign(obj: Object): void {
-        type ObjectKey = keyof typeof obj;
-        this.Value = obj[this.Field as ObjectKey]
-    }
-    public AsString(): string {
-        return this.Value
-    }
-}
-
-class OmniIntegerField extends OmniField {
-}
-class OmniStringField extends OmniField {
-}
-class OmniLookupField extends OmniField {
-    public Key: any = 0
-    public Assign(obj: Object): void {
-        type ObjectKey = keyof typeof obj;
-        this.Key = obj[this.Field as ObjectKey]
-        this.Value = obj[this.Field + '_lookup' as ObjectKey]
-    }
-    public AsString(): string {
-        return `${this.Key} ${this.Value}`
-    }
-}
-class OmniUnknownField extends OmniField {
-    public AsString(): string {
-        return 'UNKNOWN'
-    }
-}
-
-
+import { OmniDataSet } from './dataset'
+import { OmniField } from './datafields'
 
 const modello = {
     "Metadata": {
@@ -207,55 +158,25 @@ const modello = {
     ]
 }
 
+test('generic test', () => {
 
-let arr = new Array<OmniField>()
-//arr.push(new OmniIntegerField(undefined))
-//arr.push(new OmniStringField(undefined))
+    //const arr = new Array<OmniField>();
+    //arr.push(new OmniIntegerField(undefined))
+    //arr.push(new OmniStringField(undefined))
 
-//arr.forEach((element: BaseTypeClass) => console.log(element.name()));
+    //arr.forEach((element: BaseTypeClass) => console.log(element.name()));
 
-class OmniDataSet {
-    private Record: Array<OmniField> = new Array<OmniField>();
-    private Results: Array<Object>;
-    private CurrentRecord: number = 0;
 
-    constructor(json: any) {
-        const queryResults: QueryResult = json
+    let dataSet = new OmniDataSet(modello)
 
-        queryResults.Metadata.Fields.forEach((json: Object) => {
-            this.Record.push(OmniField.Create(json))
-        })
+    do {
+        //    dataSet.GetRecord()
 
-        this.Results = queryResults.Results
-
-        //Object.create('OmniIntegerField')
-        //Object.keys(obj.Classes).forEach(key: string) => console.log(key))
-
-        //let classes: Array<string> = (Array<string>)obj['Classes'];
-        // (Array<string>)obj['Classes'].forEach
-        //Object.assign(this, obj)
+        dataSet.GetRecord().forEach((field: OmniField) => console.log(field.Field + ": " + field.AsString()))
     }
+    while (dataSet.NextRecord())
 
-    public GetRecord(): Array<OmniField> {
-        this.Record.forEach((field: OmniField) => field.Assign(this.Results[this.CurrentRecord]))
-        return this.Record
-    }
-    public FirstRecord(): void {
-        this.CurrentRecord = 0
-    }
-    public NextRecord(): boolean {
-        return ++this.CurrentRecord < this.Results.length
-    }
+})
 
-}
-
-let dataSet = new OmniDataSet(modello)
-
-do {
-    //    dataSet.GetRecord()
-
-    dataSet.GetRecord().forEach((field: OmniField) => console.log(field.Field + ": " + field.AsString()))
-}
-while (dataSet.NextRecord())
 
 //console.log(model)
