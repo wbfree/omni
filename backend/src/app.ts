@@ -1,5 +1,5 @@
 import express from 'express';
-import { connection, GetMetadata, Get, test } from './mydb';
+import { connection, GetMetadata, Get } from './mydb';
 import { DbDatabaseMetadata, QueryResult } from 'omni_common'
 
 //mysql
@@ -45,7 +45,6 @@ try {
 
     console.log("DB Connected!");
     app.listen(port, () => {
-      test()
       return console.log(`Express is listening at http://localhost:${port}`);
     });
   });
