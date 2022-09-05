@@ -1,10 +1,10 @@
 import React from 'react';
 import logo from './logo.svg';
 import './App.css';
-import { DbDatabaseMetadata, DbTableMetadata, DbFieldMetadata } from 'omni_common'
+import { DbDatabaseMetadata } from 'omni_common'
 
 function App() {
-  let c = new DbDatabaseMetadata()
+  const c = new DbDatabaseMetadata()
   return (
     <div className="App">
       <header className="App-header">
