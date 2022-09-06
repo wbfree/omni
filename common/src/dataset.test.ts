@@ -167,7 +167,17 @@ test('generic test', () => {
     //arr.forEach((element: BaseTypeClass) => console.log(element.name()));
 
 
-    let dataSet = new OmniDataSet(modello)
+    const dataSet = new OmniDataSet(modello);
+    const fields: Array<OmniField> = dataSet.GetRecord();
+
+    dataSet.GetCurrentRecord();
+
+    expect(dataSet.GetRecord().length).toBe(10)
+    expect(dataSet.GetCurrentRecord()).toBe(1)
+
+    expect(dataSet.NextRecord()).toBe(true)
+    //expect(dataSet.NextRecord()).toBe(true)
+
 
     do {
         //    dataSet.GetRecord()

@@ -23,15 +23,21 @@ export class OmniDataSet {
         //Object.assign(this, obj)
     }
 
-    public GetRecord(): Array<OmniField> {
-        this.Record.forEach((field: OmniField) => field.Assign(this.Results[this.CurrentRecord]))
+    public GetRecord(recNum: number = this.CurrentRecord): Array<OmniField> {
+        this.Record.forEach((field: OmniField) => field.Assign(this.Results[recNum]))
         return this.Record
     }
     public FirstRecord(): void {
         this.CurrentRecord = 0
     }
     public NextRecord(): boolean {
-        return ++this.CurrentRecord < this.Results.length
+        return ++this.CurrentRecord < this.GetRecordCount()
+    }
+    public GetRecordCount(): number {
+        return this.Results.length
+    }
+    public GetCurrentRecord(): number {
+        return this.CurrentRecord + 1
     }
 
 }

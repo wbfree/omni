@@ -2,7 +2,7 @@
   "name": "omni_common",
   "version": "1.0.0",
   "description": "common omni",
-  "main": "lib/common.js",
+  "main": "dist/common.js",
   "scripts": {
     "start": "npx tsc --watch",
     "test": "jest"

@@ -1,4 +1,4 @@
-import { DbFieldMetadata } from './common.js'
+import { DbFieldMetadata } from './common'
 
 export abstract class OmniField extends DbFieldMetadata {
     public Value: any = 0

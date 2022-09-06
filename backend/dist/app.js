@@ -20,7 +20,7 @@ app.set('json spaces', 4);
 app.use(express_1.default.json());
 app.use(myMiddleware);
 app.get('/metadata', (req, res) => {
-    mydb_1.myDb.GetMetadata().then((meta) => {
+    (0, mydb_1.GetMetadata)().then((meta) => {
         res.json({ result: meta });
     });
 });
@@ -28,18 +28,17 @@ app.get('/favicon.ico', (req, res) => {
     res.json({ request: 'No icon' });
 });
 app.get('/:obj', (req, res) => {
-    mydb_1.myDb.Get(req.params.obj).then((results) => {
+    (0, mydb_1.Get)(req.params.obj).then((results) => {
         res.json(results);
     });
 });
 //init
 try {
-    var con = mydb_1.myDb.connect(function (err) {
+    mydb_1.connection.connect((err) => {
         if (err)
             throw new Error(err);
         console.log("DB Connected!");
         app.listen(port, () => {
-            mydb_1.myDb.test();
             return console.log(`Express is listening at http://localhost:${port}`);
         });
     });
