@@ -2,10 +2,10 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/app.js",
+  "main": "build/app.js",
   "scripts": {
-    "start": "concurrently \"npx tsc --watch\" \"nodemon -q dist/app.js\"",
-    "start_": "tsc && node dist/app.js",
+    "start": "concurrently \"npx tsc --watch\" \"nodemon -q build/app.js\"",
+    "start_": "tsc && node build/app.js",
     "lint": "eslint . --ext .ts",
     "test": "jest"
   },
