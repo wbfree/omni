@@ -1,4 +1,4 @@
-import { OmniDataSet } from './dataset'
+import { OmniDataSet, OmniRecordSet } from './dataset'
 import { OmniField } from './datafields'
 
 const modello = {
@@ -158,33 +158,19 @@ const modello = {
     ]
 }
 
-test('generic test', () => {
-
-    //const arr = new Array<OmniField>();
-    //arr.push(new OmniIntegerField(undefined))
-    //arr.push(new OmniStringField(undefined))
-
-    //arr.forEach((element: BaseTypeClass) => console.log(element.name()));
-
-
+test('OmniDataSet record navigation', () => {
     const dataSet = new OmniDataSet(modello);
-    const fields: Array<OmniField> = dataSet.GetRecord();
 
-    dataSet.GetCurrentRecord();
+    expect(dataSet.FirstRecord()).toBeDefined()
+    expect(dataSet.GetRecord()?.RecordNo).toBe(0)
+    expect(dataSet.Eof()).toBe(false)
 
-    expect(dataSet.GetRecord().length).toBe(10)
-    expect(dataSet.GetCurrentRecord()).toBe(1)
+    expect(dataSet.NextRecord()).toBeDefined()
+    expect(dataSet.GetRecord()?.RecordNo).toBe(1)
+    expect(dataSet.Eof()).toBe(false)
 
-    expect(dataSet.NextRecord()).toBe(true)
-    //expect(dataSet.NextRecord()).toBe(true)
-
-
-    do {
-        //    dataSet.GetRecord()
-
-        dataSet.GetRecord().forEach((field: OmniField) => console.log(field.Field + ": " + field.AsString()))
-    }
-    while (dataSet.NextRecord())
+    expect(dataSet.NextRecord()).toBeUndefined()
+    expect(dataSet.Eof()).toBe(true)
 
 })
 
