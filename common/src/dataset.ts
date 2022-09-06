@@ -1,3 +1,4 @@
+import { getConfigFileParsingDiagnostics } from 'typescript';
 import { QueryResult } from './common'
 import { OmniField } from './datafields'
 
@@ -15,6 +16,9 @@ export class OmniRecordSet {
     }
     public GetFieldsCount(): number {
         return this.Fields.length;
+    }
+    public FieldByName(fieldName: string): OmniField | undefined {
+        return this.Fields.find((field: OmniField) => field.Field == fieldName)
     }
 }
 

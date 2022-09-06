@@ -13,7 +13,7 @@ export abstract class OmniField extends DbFieldMetadata {
 
         if (json.Type?.startsWith('int') || json.Type?.startsWith('bigint'))
             return new OmniIntegerField(json)
-        if (json.Type?.startsWith('text'))
+        if (json.Type?.startsWith('text') || json.Type?.startsWith('char'))
             return new OmniStringField(json)
 
         return new OmniUnknownField(json)

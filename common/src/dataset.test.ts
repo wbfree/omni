@@ -1,5 +1,5 @@
 import { OmniDataSet, OmniRecordSet } from './dataset'
-import { OmniField } from './datafields'
+import { OmniStringField, OmniIntegerField, OmniLookupField } from './datafields'
 
 const modello = {
     "Metadata": {
@@ -163,14 +163,27 @@ test('OmniDataSet record navigation', () => {
 
     expect(dataSet.FirstRecord()).toBeDefined()
     expect(dataSet.GetRecord()?.RecordNo).toBe(0)
-    expect(dataSet.Eof()).toBe(false)
+
+    expect(dataSet.GetRecord()?.FieldByName('idannuncio')).toBeDefined()
+    expect(dataSet.GetRecord()?.FieldByName('idannuncio')).toBeInstanceOf(OmniIntegerField)
+    expect(dataSet.GetRecord()?.FieldByName('idannuncio')?.IsPK()).toBeTruthy()
+
+    expect(dataSet.GetRecord()?.FieldByName('valuta')).toBeInstanceOf(OmniStringField)
+    expect(dataSet.GetRecord()?.FieldByName('valuta')?.Value).toBe("USD")
+
+    expect(dataSet.GetRecord()?.FieldByName('idmovie')).toBeInstanceOf(OmniLookupField)
+    const lookupField: OmniLookupField = <OmniLookupField>(dataSet.GetRecord()?.FieldByName('idmovie'))
+    expect(lookupField.Key).toBe(1)
+    expect(lookupField.Value).toBe(33475)
+
+    expect(dataSet.Eof()).toBeFalsy()
 
     expect(dataSet.NextRecord()).toBeDefined()
     expect(dataSet.GetRecord()?.RecordNo).toBe(1)
-    expect(dataSet.Eof()).toBe(false)
+    expect(dataSet.Eof()).toBeFalsy()
 
     expect(dataSet.NextRecord()).toBeUndefined()
-    expect(dataSet.Eof()).toBe(true)
+    expect(dataSet.Eof()).toBeTruthy()
 
 })
 
