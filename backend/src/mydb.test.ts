@@ -3,7 +3,6 @@ import { DbDatabaseMetadata } from 'omni_common'
 
 test('generic test', () => {
 
-
     GetMetadata()
         .then((meta: DbDatabaseMetadata) => {
             const json_data: string = JSON.stringify(meta);

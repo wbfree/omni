@@ -1,7 +1,7 @@
 import { OmniDataSet, OmniRecordSet } from './dataset'
 import { OmniStringField, OmniIntegerField, OmniLookupField } from './datafields'
 
-const modello = {
+export const testData = {
     "Metadata": {
         "Fields": [
             {
@@ -159,7 +159,7 @@ const modello = {
 }
 
 test('OmniDataSet record navigation', () => {
-    const dataSet = new OmniDataSet(modello);
+    const dataSet = new OmniDataSet(testData);
 
     expect(dataSet.FirstRecord()).toBeDefined()
     expect(dataSet.GetRecord()?.RecordNo).toBe(0)

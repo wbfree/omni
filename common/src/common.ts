@@ -1,3 +1,6 @@
+export { OmniField, OmniIntegerField, OmniStringField, OmniLookupField, OmniUnknownField } from './datafields';
+export { OmniRecordSet, OmniDataSet } from './dataset'
+
 export class DbFieldMetadata {
     public SchemaName: string;
     public TableName: string;
@@ -99,9 +102,9 @@ export class QueryResult {
     public Metadata: DbTableMetadata;
     public SQL: string | undefined;
 
-    public constructor(metadata :DbTableMetadata, results :Array<object>) {
-        this.Metadata=metadata
-        this.Results=results
+    public constructor(metadata: DbTableMetadata, results: Array<object>) {
+        this.Metadata = metadata
+        this.Results = results
     }
 
 }

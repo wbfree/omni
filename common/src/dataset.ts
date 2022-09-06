@@ -1,4 +1,3 @@
-import { getConfigFileParsingDiagnostics } from 'typescript';
 import { QueryResult } from './common'
 import { OmniField } from './datafields'
 
