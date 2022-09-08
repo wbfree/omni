@@ -1,6 +1,3 @@
-export { OmniField, OmniIntegerField, OmniStringField, OmniLookupField, OmniUnknownField } from './datafields';
-export { OmniRecordSet, OmniDataSet } from './dataset'
-
 export class DbFieldMetadata {
     public SchemaName: string;
     public TableName: string;
