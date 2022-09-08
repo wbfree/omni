@@ -1,7 +1,7 @@
 import { GetMetadata, DbDatabaseMetadata_Loader } from './mydb';
 import { DbDatabaseMetadata } from 'omni_common'
 
-test('generic test', () => {
+test('Metadata serializer', () => {
 
     GetMetadata()
         .then((meta: DbDatabaseMetadata) => {
