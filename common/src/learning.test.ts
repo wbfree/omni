@@ -22,3 +22,20 @@ test('Template class and function', () => {
     expect(typeInfoFnc(param).prop).toBe(param);
 
 })
+
+test('interface template overload', () => {
+
+    interface testItf {
+        <P = number | string>(...values: Array<P>): string
+        (...values: Array<boolean>): string
+        //(): testItf
+    }
+
+    const impl1: testItf = (...values: Array<any>) => '1'
+    const impl2: testItf = (...values: Array<number> | Array<string> | Array<boolean>) => '2'
+
+    expect(impl1(1, 2, 3)).toBe('1')
+    expect(impl2('2', '1', '2')).toBe('2')
+
+})
+
