@@ -1,5 +1,6 @@
 import express from 'express';
-import { connection, GetMetadata, Get } from './mydb';
+import { GetMetadata, Get } from './mydb';
+import { DatabaseMySql } from './mydb.mysql';
 import { DbDatabaseMetadata, QueryResult } from 'omni_common'
 
 //mysql
@@ -20,8 +21,10 @@ app.set('json spaces', 4);
 app.use(express.json());
 app.use(myMiddleware)
 
+const dbConnection: DatabaseMySql = new DatabaseMySql
+
 app.get('/metadata', (req, res) => {
-  GetMetadata().then((meta: DbDatabaseMetadata) => {
+  GetMetadata(dbConnection).then((meta: DbDatabaseMetadata) => {
     res.json({ result: meta })
   })
 });
@@ -31,16 +34,14 @@ app.get('/favicon.ico', (req, res) => {
 });
 
 app.get('/:obj', (req, res) => {
-  Get(req.params.obj).then((results: QueryResult) => {
+  Get(dbConnection, req.params.obj).then((results: QueryResult) => {
     res.json(results);
   })
 
 });
 
-
-//init
 try {
-  connection.connect((err: string) => {
+  dbConnection.Connect((err: string) => {
     if (err) throw new Error(err)
 
     console.log("DB Connected!");

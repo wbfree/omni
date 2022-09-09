@@ -1,34 +1,30 @@
 import { DbDatabaseMetadata, DbTableMetadata, DbFieldMetadata, QueryResult } from 'omni_common'
-import dotenv from 'dotenv';
-import mysql from 'mysql';
 
-dotenv.config({ path: __dirname + '/.env' })
+export interface DatabaseResult {
+    (err: object, results: Array<object>): void;
+}
+export interface DatabaseError {
+    (err: string): void;
+}
 
-export const connection: mysql.Connection = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    port: 3306
-});
+export abstract class DatabaseInterface {
+    public abstract Connect(callback: DatabaseError): void;
+    public abstract GetTables(schema: string, callback: DatabaseResult): void;
+    public abstract GetKeys(schema: string, callback: DatabaseResult): void;
+    public abstract GetFields(schema: string, table: string, callback: DatabaseResult): void;
+    public abstract Query(sql: string, callback: DatabaseResult): void;
+}
 
 export class DbDatabaseMetadata_Loader {
-    private conn: mysql.Connection
+    private conn: DatabaseInterface
 
-    public constructor(connection: mysql.Connection) {
+    public constructor(connection: DatabaseInterface) {
         this.conn = connection
     }
 
     private loadKeys(meta: DbDatabaseMetadata, schema: string): Promise<DbDatabaseMetadata> {
-        const keys_query =
-            `SELECT us.TABLE_SCHEMA SchemaName, us.TABLE_NAME TableName, us.COLUMN_NAME Field,
-	        us.REFERENCED_TABLE_SCHEMA Referenced_Schema, 
-            us.REFERENCED_TABLE_NAME Referenced_Table, 
-            us.REFERENCED_COLUMN_NAME Referenced_Field
-        FROM information_schema.KEY_COLUMN_USAGE us
-            WHERE TABLE_SCHEMA='${schema}'`;
-
         return new Promise<DbDatabaseMetadata>((resolve, reject) => {
-            this.conn.query(keys_query, function (err: object, results: Array<object>) {
+            this.conn.GetKeys(schema, function (err: object, results: Array<object>) {
                 if (err) reject(err)
                 results.forEach((keys: object) => {
                     const schemaName: string = keys['SchemaName'];
@@ -48,9 +44,7 @@ export class DbDatabaseMetadata_Loader {
 
             schema_tables.forEach((tableData: DbTableMetadata) => {
                 promises.push(new Promise<void>((resolve, reject) => {
-                    const fields_query = `show fields from ${schema}.${tableData.TableName}`
-
-                    this.conn.query(fields_query, function (err: object, results: Array<object>) {
+                    this.conn.GetFields(schema, tableData.TableName, function (err: object, results: Array<object>) {
                         if (err) reject(err)
 
                         const table: DbTableMetadata = meta.GetTable(tableData.TableName, schema)
@@ -69,11 +63,10 @@ export class DbDatabaseMetadata_Loader {
             })
         })
     }
-    private loadTables(meta: DbDatabaseMetadata, schema: string): Promise<DbDatabaseMetadata> {
-        const table_query = `show tables from ${schema}`
 
+    private loadTables(meta: DbDatabaseMetadata, schema: string): Promise<DbDatabaseMetadata> {
         return new Promise<DbDatabaseMetadata>((resolve, reject) => {
-            this.conn.query(table_query, function (err: object, results: Array<object>) {
+            this.conn.GetTables(schema, function (err: object, results: Array<object>) {
                 if (err) reject(err)
                 results.forEach((result: object) => {
                     for (const table in result) {
@@ -97,15 +90,15 @@ export class DbDatabaseMetadata_Loader {
     }
 }
 
-export async function GetMetadata(): Promise<DbDatabaseMetadata> {
-    const loader = new DbDatabaseMetadata_Loader(connection);
+export async function GetMetadata(conn: DatabaseInterface): Promise<DbDatabaseMetadata> {
+    const loader = new DbDatabaseMetadata_Loader(conn);
     const meta = await loader.FromSchema(process.env.DB_DATABASE, new DbDatabaseMetadata)
     return await loader.FromSchema(process.env.DB_DATABASE_COMMON, meta)
 }
 
-export async function Get(obj: string): Promise<QueryResult> {
+export async function Get(conn: DatabaseInterface, obj: string): Promise<QueryResult> {
     return new Promise((resolve) => {
-        GetMetadata().then((meta: DbDatabaseMetadata) => {
+        GetMetadata(conn).then((meta: DbDatabaseMetadata) => {
             const table: DbTableMetadata = meta.GetTable(obj, process.env.DB_DATABASE)
 
             const sql_fields: Array<string> = new Array<string>();
@@ -120,7 +113,7 @@ export async function Get(obj: string): Promise<QueryResult> {
             })
             const sql = `Select ${sql_fields.join(',')} from ${table.GetSQLRef()} ${sql_join.join(' ')}`
 
-            connection.query(sql, function (err: object, results: Array<object>) {
+            conn.Query(sql, function (err: object, results: Array<object>) {
                 const query_result = new QueryResult(meta.GetTable(obj, process.env.DB_DATABASE), results)
                 query_result.Err = err
                 query_result.SQL = sql
