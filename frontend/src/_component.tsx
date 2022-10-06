@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 
-function _useState<Type>(arg: Type): any {
-    //console.log(arg);
+function _useState<Type>(
+    arg: Type
+): [Type, React.Dispatch<React.SetStateAction<Type>>] {
     return useState(arg);
 }
 
 export class _Component<Type> {
     protected value: Type;
-    protected setter: any;
+    protected setter: React.Dispatch<React.SetStateAction<Type>>;
 
     constructor(refObj: Type) {
         const [value, setter] = _useState(refObj);
@@ -25,7 +26,7 @@ export class _Component<Type> {
     }
 }
 
-function _useEffect<Type>(component: _ComponentAPI<Type>): any {
+function _useEffect<Type>(component: _ComponentAPI<Type>): void {
     useEffect(() => {
         //console.log("useEffect");
         component.Fetch();
