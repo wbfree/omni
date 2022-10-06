@@ -29,7 +29,7 @@ function _useEffect<Type>(component: _ComponentAPI<Type>): any {
     useEffect(() => {
         //console.log("useEffect");
         component.Fetch();
-    }, []);
+    }, [component]);
 }
 
 export class _ComponentAPI<Type extends Object> extends _Component<Type> {
